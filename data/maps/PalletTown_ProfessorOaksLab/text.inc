@@ -44,6 +44,10 @@ Text_RivalVictory::
 PalletTown_ProfessorOaksLab_Text_RivalGoToughenMyMon::
     .string "{RIVAL}: Okay! I'll make my\n"
     .string "POKéMON battle to toughen it up!\p"
+    .string "And gramps! Why does {PLAYER} get\n"
+    .string "your precious FUSION STONE?!\p"
+    .string "Hmph! I don't need some weird\n"
+    .string "rock! I'll win with pure skill!\p"
     .string "{PLAYER}! Gramps!\n"
     .string "Smell you later!$"
 
@@ -171,8 +175,10 @@ PalletTown_ProfessorOaksLab_Text_DeliveredOaksParcel::
 PalletTown_ProfessorOaksLab_Text_OakCustomBallIOrdered::
     .string "Ah! \n"
     .string "It's the custom POKé BALL!\p"
-    .string "I had it on order.\n"
-    .string "Thank you!$"
+    .string "I had it on order for my fusion\n"
+    .string "research. Thank you!\p"
+    .string "One day, a ball like this may even\n"
+    .string "hold a fused POKéMON's power…$"
 
 PalletTown_ProfessorOaksLab_Text_OakHaveRequestForYouTwo::
     .string "OAK: Oh, right!\n"

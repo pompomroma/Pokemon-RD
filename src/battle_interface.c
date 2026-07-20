@@ -1852,12 +1852,18 @@ s32 MoveBattleBar(u8 battlerId, u8 healthboxSpriteId, u8 whichBar, u8 unused)
 
     if (whichBar == HEALTH_BAR)
     {
+        // Drain at a constant one pixel per frame regardless of max HP
+        // (vanilla drains 1 HP per frame, which crawls on high-HP Pokémon).
+        u16 hpPerPixel = gBattleSpritesDataPtr->battleBars[battlerId].maxValue / (B_HEALTHBAR_NUM_TILES * 8);
+
+        if (hpPerPixel < 1)
+            hpPerPixel = 1;
         currentBarValue = CalcNewBarValue(gBattleSpritesDataPtr->battleBars[battlerId].maxValue,
                                           gBattleSpritesDataPtr->battleBars[battlerId].oldValue,
                                           gBattleSpritesDataPtr->battleBars[battlerId].receivedValue,
                                           &gBattleSpritesDataPtr->battleBars[battlerId].currValue,
                                           B_HEALTHBAR_NUM_TILES,
-                                          1);
+                                          hpPerPixel);
     }
     else // exp bar
     {

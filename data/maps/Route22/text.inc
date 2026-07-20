@@ -6,8 +6,10 @@ Route22_Text_EarlyRivalIntro::
 	.string "BADGES, do you?\p"
 	.string "The guard won't let you through\n"
 	.string "without them.\p"
-	.string "By the way, did your POKéMON get\n"
-	.string "any stronger?$"
+	.string "By the way, have you used that\n"
+	.string "FUSION STONE gramps gave you?\p"
+	.string "Fused POKéMON, ha!\n"
+	.string "Show me if it's for real!$"
 
 Route22_Text_EarlyRivalDefeat::
 	.string "Awww!\n"

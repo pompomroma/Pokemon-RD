@@ -305,9 +305,11 @@
 #define BATTLE_TERRAIN_LANCE       18
 #define BATTLE_TERRAIN_CHAMPION    19
 
-#define B_WAIT_TIME_LONG  64
-#define B_WAIT_TIME_MED   48
-#define B_WAIT_TIME_SHORT 32
+// Battle message/pause wait times, trimmed from vanilla (64/48/32) for a
+// snappier battle flow.
+#define B_WAIT_TIME_LONG  40
+#define B_WAIT_TIME_MED   28
+#define B_WAIT_TIME_SHORT 16
 
 #define CASTFORM_NORMAL     0
 #define CASTFORM_FIRE       1
