@@ -421,6 +421,9 @@ gBattleAnims_General::
 	.4byte General_SafariRockThrow          @ B_ANIM_ROCK_THROW
 	.4byte General_SafariReaction           @ B_ANIM_SAFARI_REACTION
 	.4byte General_FusionAura               @ B_ANIM_FUSION_AURA
+	.4byte General_MegaEvolution            @ B_ANIM_MEGA_EVOLUTION
+	.4byte General_DynamaxGrowth            @ B_ANIM_DYNAMAX_GROWTH
+	.4byte General_GigantamaxGrowth         @ B_ANIM_GIGANTAMAX_GROWTH
 
 	.align 2
 gBattleAnims_Special::
@@ -9788,6 +9791,76 @@ General_FusionAura:
 	playsewithpan SE_M_MEGA_KICK, SOUND_PAN_ATTACKER
 	createvisualtask AnimTask_HorizontalShake, 5, (MAX_BATTLERS_COUNT + 1), 6, 20
 	createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG | F_PAL_BATTLERS, 4, 2, RGB_WHITE, 10, RGB_BLACK, 0
+	waitforvisualfinish
+	end
+
+@ Mega Evolution entrance: dim, a bright blue-white energy surge with a
+@ grow pulse, then a white flash burst and screen shake.
+General_MegaEvolution:
+	loadspritegfx ANIM_TAG_FOCUS_ENERGY
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 0, 10, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_DRAGON_RAGE, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_BlendColorCycle, 2, F_PAL_ATTACKER, 2, 2, 0, 13, RGB(10, 22, 31)
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 8
+	call EndureEffect
+	delay 8
+	call EndureEffect
+	waitforvisualfinish
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 10, 0, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_MEGA_KICK, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_HorizontalShake, 5, (MAX_BATTLERS_COUNT + 1), 6, 20
+	createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG | F_PAL_BATTLERS, 4, 2, RGB_WHITE, 10, RGB_BLACK, 0
+	waitforvisualfinish
+	end
+
+@ Dynamax growth: heavy red energy, the Pokémon swells with a double grow
+@ pulse, then a booming shake and red flash to mark the giant form.
+General_DynamaxGrowth:
+	loadspritegfx ANIM_TAG_FOCUS_ENERGY
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 0, 12, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_DRAGON_RAGE, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_BlendColorCycle, 2, F_PAL_ATTACKER, 2, 2, 0, 13, RGB(31, 6, 10)
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 6
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 6
+	call EndureEffect
+	waitforvisualfinish
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 12, 0, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_EXPLOSION, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_HorizontalShake, 5, (MAX_BATTLERS_COUNT + 1), 9, 30
+	createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG | F_PAL_BATTLERS, 5, 2, RGB(31, 12, 12), 12, RGB_BLACK, 0
+	waitforvisualfinish
+	end
+
+@ Gigantamax growth: the same colossal entrance in fused-purple energy.
+General_GigantamaxGrowth:
+	loadspritegfx ANIM_TAG_FOCUS_ENERGY
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 0, 12, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_DRAGON_RAGE, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_BlendColorCycle, 2, F_PAL_ATTACKER, 2, 2, 0, 13, RGB(24, 6, 31)
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 6
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 6
+	call EndureEffect
+	waitforvisualfinish
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 12, 0, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_EXPLOSION, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_HorizontalShake, 5, (MAX_BATTLERS_COUNT + 1), 9, 30
+	createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG | F_PAL_BATTLERS, 5, 2, RGB(24, 12, 31), 12, RGB_BLACK, 0
 	waitforvisualfinish
 	end
 

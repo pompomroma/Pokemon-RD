@@ -24,6 +24,7 @@
 #include "party_menu.h"
 #include "pokeball.h"
 #include "pokemon_fusion.h"
+#include "battle_gimmicks.h"
 #include "pokedex.h"
 #include "quest_log.h"
 #include "random.h"
@@ -2516,6 +2517,7 @@ void FaintClearSetData(void)
     gBattleMons[gActiveBattler].type1 = gSpeciesInfo[gBattleMons[gActiveBattler].species].types[0];
     gBattleMons[gActiveBattler].type2 = gSpeciesInfo[gBattleMons[gActiveBattler].species].types[1];
     Fusion_ApplyBattleTypes(gActiveBattler);
+    Gimmick_ApplyBattleStats(gActiveBattler);
 }
 
 static void BattleIntroGetMonsData(void)
@@ -2582,6 +2584,7 @@ static void BattleIntroDrawTrainersOrMonsSprites(void)
             gBattleMons[gActiveBattler].type1 = gSpeciesInfo[gBattleMons[gActiveBattler].species].types[0];
             gBattleMons[gActiveBattler].type2 = gSpeciesInfo[gBattleMons[gActiveBattler].species].types[1];
             Fusion_ApplyBattleTypes(gActiveBattler);
+            Gimmick_ApplyBattleStats(gActiveBattler);
             gBattleMons[gActiveBattler].ability = GetAbilityBySpecies(gBattleMons[gActiveBattler].species, gBattleMons[gActiveBattler].abilityNum);
             hpOnSwitchout = &gBattleStruct->hpOnSwitchout[GetBattlerSide(gActiveBattler)];
             *hpOnSwitchout = gBattleMons[gActiveBattler].hp;
@@ -2990,6 +2993,7 @@ void BattleTurnPassed(void)
     }
     if (gBattleResults.battleTurnCounter < 0xFF)
         ++gBattleResults.battleTurnCounter;
+    Gimmick_EndTurnDynamaxCountdown();
     for (i = 0; i < gBattlersCount; i++)
     {
         gChosenActionByBattler[i] = B_ACTION_NONE;
@@ -4028,6 +4032,8 @@ static void HandleAction_UseMove(void)
     // FUSION BURST's type and power are generated per fusion pair.
     if (gCurrentMove == MOVE_FUSION_BURST)
         Fusion_SetSignatureMoveDynamics(gBattlerAttacker);
+    else
+        Gimmick_ApplyMovePower(gBattlerAttacker, gCurrentMove); // Z-Move / Dynamax boosts
     // choose target
     side = GetBattlerSide(gBattlerAttacker) ^ BIT_SIDE;
     if (gSideTimers[side].followmeTimer != 0

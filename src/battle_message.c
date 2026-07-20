@@ -5,6 +5,7 @@
 #include "strings.h"
 #include "battle_message.h"
 #include "pokemon_fusion.h"
+#include "battle_gimmicks.h"
 
 // Holds a generated per-fusion signature move name while a battle string
 // referencing it is being expanded.
@@ -489,6 +490,9 @@ static const u8 sText_SandstormIsRaging[] = _("A sandstorm is raging.");
 static const u8 sText_BoxIsFull[] = _("The BOX is full!\nYou can't catch any more!\p");
 static const u8 sText_EnigmaBerry[] = _("ENIGMA BERRY");
 static const u8 sText_FusionAuraFlared[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s fusion\naura flared!");
+static const u8 sText_MegaEvolved[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} is reacting\nto the MEGA STONE! It Mega Evolved!");
+static const u8 sText_Dynamaxed[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} Dynamaxed\ninto a towering giant!");
+static const u8 sText_Gigantamaxed[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} Gigantamaxed\ninto its fused colossus form!");
 static const u8 sText_BerrySuffix[] = _(" BERRY");
 static const u8 sText_Enigma[] = _("ナゾ");
 static const u8 sText_PkmnsItemCuredParalysis[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s {B_LAST_ITEM}\ncured paralysis!");
@@ -895,7 +899,10 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT - BATTLESTRINGS_TABLE_ST
     [STRINGID_TRAINER1WINTEXT - BATTLESTRINGS_TABLE_START]               = sText_Trainer1WinText,
     [STRINGID_TRAINER1MON2COMEBACK - BATTLESTRINGS_TABLE_START]          = sText_Trainer1RecallPkmn2,
     [STRINGID_TRAINER1MON1AND2COMEBACK - BATTLESTRINGS_TABLE_START]      = sText_Trainer1RecallBoth,
-    [STRINGID_FUSIONAURAFLARED - BATTLESTRINGS_TABLE_START]              = sText_FusionAuraFlared
+    [STRINGID_FUSIONAURAFLARED - BATTLESTRINGS_TABLE_START]              = sText_FusionAuraFlared,
+    [STRINGID_MEGAEVOLVED - BATTLESTRINGS_TABLE_START]                   = sText_MegaEvolved,
+    [STRINGID_DYNAMAXED - BATTLESTRINGS_TABLE_START]                     = sText_Dynamaxed,
+    [STRINGID_GIGANTAMAXED - BATTLESTRINGS_TABLE_START]                  = sText_Gigantamaxed
 };
 
 const u16 gMissStringIds[] =
@@ -1975,6 +1982,8 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst)
                     toCpy = (const u8 *)&sATypeMove_Table[gBattleStruct->stringMoveType];
                 else if (Fusion_GetMoveNameForBattler(gBattlerAttacker, sBattleMsgDataPtr->currentMove, sFusionMoveName))
                     toCpy = sFusionMoveName;
+                else if (Gimmick_IsZMoveName(gBattlerAttacker, sBattleMsgDataPtr->currentMove, sFusionMoveName))
+                    toCpy = sFusionMoveName;
                 else
                     toCpy = gMoveNames[sBattleMsgDataPtr->currentMove];
                 break;
@@ -1982,6 +1991,8 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst)
                 if (sBattleMsgDataPtr->originallyUsedMove >= MOVES_COUNT)
                     toCpy = (const u8 *)&sATypeMove_Table[gBattleStruct->stringMoveType];
                 else if (Fusion_GetMoveNameForBattler(gBattlerAttacker, sBattleMsgDataPtr->originallyUsedMove, sFusionMoveName))
+                    toCpy = sFusionMoveName;
+                else if (Gimmick_IsZMoveName(gBattlerAttacker, sBattleMsgDataPtr->originallyUsedMove, sFusionMoveName))
                     toCpy = sFusionMoveName;
                 else
                     toCpy = gMoveNames[sBattleMsgDataPtr->originallyUsedMove];
@@ -2250,6 +2261,8 @@ static void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
             break;
         case B_BUFF_MOVE: // move name
             if (Fusion_GetMoveNameForBattler(gBattlerAttacker, T1_READ_16(&src[srcId + 1]), sFusionMoveName))
+                StringAppend(dst, sFusionMoveName);
+            else if (Gimmick_IsZMoveName(gBattlerAttacker, T1_READ_16(&src[srcId + 1]), sFusionMoveName))
                 StringAppend(dst, sFusionMoveName);
             else
                 StringAppend(dst, gMoveNames[T1_READ_16(&src[srcId + 1])]);

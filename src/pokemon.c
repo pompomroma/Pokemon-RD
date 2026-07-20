@@ -23,6 +23,7 @@
 #include "overworld.h"
 #include "party_menu.h"
 #include "pokemon_fusion.h"
+#include "battle_gimmicks.h"
 #include "field_specials.h"
 #include "berry.h"
 #include "constants/items.h"
@@ -3967,6 +3968,7 @@ static void CopyPlayerPartyMonToBattleData(u8 battlerId, u8 partyIndex)
         if (fusionPartner != SPECIES_NONE)
             Fusion_GetTypes(gBattleMons[battlerId].species, fusionPartner, &gBattleMons[battlerId].type1, &gBattleMons[battlerId].type2);
     }
+    Gimmick_ApplyBattleStats(battlerId);
     gBattleMons[battlerId].ability = GetAbilityBySpecies(gBattleMons[battlerId].species, gBattleMons[battlerId].abilityNum);
     GetMonData(&gPlayerParty[partyIndex], MON_DATA_NICKNAME, nickname);
     StringCopy_Nickname(gBattleMons[battlerId].nickname, nickname);

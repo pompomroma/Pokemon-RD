@@ -7,6 +7,7 @@
 #include "random.h"
 #include "pokemon.h"
 #include "pokemon_fusion.h"
+#include "battle_gimmicks.h"
 #include "string_util.h"
 #include "field_weather.h"
 #include "event_data.h"
@@ -1715,6 +1716,12 @@ u8 AbilityBattleEffects(u8 caseID, u8 battler, u8 ability, u8 special, u16 moveA
                 gBattleStruct->fusionAuraPlayed |= gBitTable[battler];
                 gBattleScripting.battler = battler;
                 BattleScriptPushCursorAndCallback(BattleScript_FusionAuraFlares);
+                effect++;
+                break;
+            }
+            // Held-artifact entrances (Mega Evolution, Dynamax/Gigantamax).
+            if (Gimmick_TrySwitchInActivate(battler))
+            {
                 effect++;
                 break;
             }

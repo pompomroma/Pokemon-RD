@@ -3930,6 +3930,27 @@ BattleScript_FusionAuraFlares::
 	waitmessage B_WAIT_TIME_LONG
 	end3
 
+BattleScript_MegaEvolutionActivates::
+	pause B_WAIT_TIME_SHORT
+	playanimation BS_SCRIPTING, B_ANIM_MEGA_EVOLUTION
+	printstring STRINGID_MEGAEVOLVED
+	waitmessage B_WAIT_TIME_LONG
+	end3
+
+BattleScript_DynamaxActivates::
+	pause B_WAIT_TIME_SHORT
+	playanimation BS_SCRIPTING, B_ANIM_DYNAMAX_GROWTH
+	printstring STRINGID_DYNAMAXED
+	waitmessage B_WAIT_TIME_LONG
+	end3
+
+BattleScript_GigantamaxActivates::
+	pause B_WAIT_TIME_SHORT
+	playanimation BS_SCRIPTING, B_ANIM_GIGANTAMAX_GROWTH
+	printstring STRINGID_GIGANTAMAXED
+	waitmessage B_WAIT_TIME_LONG
+	end3
+
 BattleScript_SpeedBoostActivates::
 	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
 	printstring STRINGID_PKMNRAISEDSPEED

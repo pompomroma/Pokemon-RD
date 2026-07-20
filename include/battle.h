@@ -455,8 +455,14 @@ struct BattleStruct
         struct LinkBattlerHeader linkBattlerHeader;
         struct MultiBattlePokemonTx multiBattleMons[3];
     } multiBuffer;
-    u8 fusionAuraPlayed; // bitmask of battlers whose fusion aura has shown
-    u8 padding_1E5[0x1B];
+    u8 fusionAuraPlayed;  // bitmask: battlers whose fusion aura has shown
+    u8 megaEvolved;       // bitmask: battlers whose Mega cutscene has shown
+    u8 dynamaxed;         // bitmask: battlers currently Dynamaxed
+    u8 gigantamaxed;      // bitmask: Dynamaxed battlers that are fused (Gigantamax)
+    u8 zMoveUsed;         // bitmask: battlers that have spent their Z-Move
+    u8 zMoveThisMove;     // bitmask: battler's current move is the Z-Move
+    u8 dynamaxTurns[MAX_BATTLERS_COUNT]; // remaining Dynamax turns per battler
+    u8 padding_1E5[0x12];
 }; // size == 0x200 bytes
 
 extern struct BattleStruct *gBattleStruct;

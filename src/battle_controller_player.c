@@ -2,6 +2,7 @@
 #include "gflib.h"
 #include "data.h"
 #include "pokemon_fusion.h"
+#include "battle_gimmicks.h"
 #include "item.h"
 #include "item_menu.h"
 #include "link.h"

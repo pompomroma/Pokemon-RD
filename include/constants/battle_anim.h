@@ -376,6 +376,9 @@
 #define B_ANIM_ROCK_THROW               26
 #define B_ANIM_SAFARI_REACTION          27
 #define B_ANIM_FUSION_AURA              28
+#define B_ANIM_MEGA_EVOLUTION           29
+#define B_ANIM_DYNAMAX_GROWTH           30
+#define B_ANIM_GIGANTAMAX_GROWTH        31
 
 // special animations table (gBattleAnims_Special)
 #define B_ANIM_LVL_UP                   0
