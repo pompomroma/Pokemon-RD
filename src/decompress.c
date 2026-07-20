@@ -2,6 +2,7 @@
 #include "gflib.h"
 #include "decompress.h"
 #include "pokemon.h"
+#include "pokemon_fusion.h"
 
 extern const struct CompressedSpriteSheet gMonFrontPicTable[];
 extern const struct CompressedSpriteSheet gMonBackPicTable[];
@@ -103,6 +104,7 @@ void LoadSpecialPokePic(const struct CompressedSpriteSheet *src, void *dest, s32
 
     DuplicateDeoxysTiles(dest, species);
     DrawSpindaSpots(species, personality, dest, isFrontPic);
+    Fusion_SpliceMonPic(dest, personality, isFrontPic);
 }
 
 static void DuplicateDeoxysTiles(void *pointer, s32 species)
@@ -349,4 +351,5 @@ void LoadSpecialPokePic_DontHandleDeoxys(const struct CompressedSpriteSheet *src
         LZ77UnCompWram(src->data, dest);
     }
     DrawSpindaSpots(species, personality, dest, isFrontPic);
+    Fusion_SpliceMonPic(dest, personality, isFrontPic);
 }

@@ -2930,6 +2930,7 @@ extern const u32 gItemIcon_SunStone[];
 extern const u32 gItemIconPalette_SunStone[];
 extern const u32 gItemIcon_MoonStone[];
 extern const u32 gItemIconPalette_MoonStone[];
+extern const u32 gItemIconPalette_FusionStone[];
 extern const u32 gItemIcon_FireStone[];
 extern const u32 gItemIconPalette_FireStone[];
 extern const u32 gItemIcon_ThunderStone[];

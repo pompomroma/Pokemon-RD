@@ -126,6 +126,24 @@ PalletTown_ProfessorOaksLab_Text_ReceivedMonFromOak::
     .string "{PLAYER} received the {STR_VAR_1}\n"
     .string "from PROF. OAK!$"
 
+PalletTown_ProfessorOaksLab_Text_OakGivesFusionStone::
+    .string "OAK: Oh, and one more thing…\p"
+    .string "Take this as well.\n"
+    .string "It is my latest discovery-\l"
+    .string "the FUSION STONE!\p"
+    .string "It holds the power to merge two\n"
+    .string "POKéMON into a single being\l"
+    .string "stronger than either one!\p"
+    .string "Such POKéMON have never been\n"
+    .string "seen anywhere in the world!\p"
+    .string "Use it on a POKéMON in your\n"
+    .string "party, and share with me what\l"
+    .string "you discover!$"
+
+PalletTown_ProfessorOaksLab_Text_ReceivedFusionStone::
+    .string "{PLAYER} received the FUSION STONE\n"
+    .string "from PROF. OAK!$"
+
 PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon::
     .string "OAK: If a wild POKéMON appears,\n"
     .string "your POKéMON can battle it.\p"

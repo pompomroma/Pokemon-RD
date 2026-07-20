@@ -65,7 +65,7 @@
       "secondaryId": 2
     },
     {
-      "english": "POK\u00e9 BALL",
+      "english": "POKé BALL",
       "itemId": "ITEM_POKE_BALL",
       "price": 200,
       "holdEffect": "HOLD_EFFECT_NONE",
@@ -1281,7 +1281,7 @@
       "secondaryId": 0
     },
     {
-      "english": "POK\u00e9 DOLL",
+      "english": "POKé DOLL",
       "itemId": "ITEM_POKE_DOLL",
       "price": 1000,
       "holdEffect": "HOLD_EFFECT_NONE",
@@ -5659,7 +5659,7 @@
       "secondaryId": 0
     },
     {
-      "english": "POK\u00e9 FLUTE",
+      "english": "POKé FLUTE",
       "itemId": "ITEM_POKE_FLUTE",
       "price": 0,
       "holdEffect": "HOLD_EFFECT_NONE",
@@ -6054,6 +6054,22 @@
       "pocket": "POCKET_KEY_ITEMS",
       "type": "ITEM_TYPE_BAG_MENU",
       "fieldUseFunc": "FieldUseFunc_OakStopsYou",
+      "battleUsage": 0,
+      "battleUseFunc": "NULL",
+      "secondaryId": 0
+    },
+    {
+      "itemId": "ITEM_FUSION_STONE",
+      "english": "FUSION STONE",
+      "price": 0,
+      "holdEffect": "HOLD_EFFECT_NONE",
+      "holdEffectParam": 0,
+      "description_english": "OAK's mystic stone.\\nIt merges two partner\\nPOKéMON into one.",
+      "importance": 1,
+      "registrability": 0,
+      "pocket": "POCKET_KEY_ITEMS",
+      "type": "ITEM_TYPE_PARTY_MENU",
+      "fieldUseFunc": "FieldUseFunc_FusionStone",
       "battleUsage": 0,
       "battleUseFunc": "NULL",
       "secondaryId": 0

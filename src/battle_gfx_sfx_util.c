@@ -13,6 +13,7 @@
 #include "battle_main.h"
 #include "battle_anim.h"
 #include "battle_interface.h"
+#include "pokemon_fusion.h"
 #include "constants/battle_anim.h"
 #include "constants/moves.h"
 #include "constants/songs.h"
@@ -348,6 +349,8 @@ void BattleLoadOpponentMonSpriteGfx(struct Pokemon *mon, u8 battlerId)
         lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(species, otId, monsPersonality);
     buffer = AllocZeroed(0x400);
     LZDecompressWram(lzPaletteData, buffer);
+    if (gBattleSpritesDataPtr->battlerData[battlerId].transformSpecies == SPECIES_NONE)
+        Fusion_BlendMonPalBuffer(monsPersonality, otId, buffer);
     LoadPalette(buffer, paletteOffset, PLTT_SIZE_4BPP);
     LoadPalette(buffer, BG_PLTT_ID(8) + BG_PLTT_ID(battlerId), PLTT_SIZE_4BPP);
     Free(buffer);
@@ -402,6 +405,8 @@ void BattleLoadPlayerMonSpriteGfx(struct Pokemon *mon, u8 battlerId)
         lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(species, otId, monsPersonality);
     buffer = AllocZeroed(0x400);
     LZDecompressWram(lzPaletteData, buffer);
+    if (gBattleSpritesDataPtr->battlerData[battlerId].transformSpecies == SPECIES_NONE)
+        Fusion_BlendMonPalBuffer(monsPersonality, otId, buffer);
     LoadPalette(buffer, paletteOffset, PLTT_SIZE_4BPP);
     LoadPalette(buffer, BG_PLTT_ID(8) + BG_PLTT_ID(battlerId), PLTT_SIZE_4BPP);
     Free(buffer);

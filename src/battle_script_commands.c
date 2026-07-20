@@ -16,6 +16,7 @@
 #include "naming_screen.h"
 #include "overworld.h"
 #include "party_menu.h"
+#include "pokemon_fusion.h"
 #include "trainer_pokemon_sprites.h"
 #include "field_specials.h"
 #include "battle.h"
@@ -4482,6 +4483,7 @@ static void Cmd_switchindataupdate(void)
 
     gBattleMons[gActiveBattler].type1 = gSpeciesInfo[gBattleMons[gActiveBattler].species].types[0];
     gBattleMons[gActiveBattler].type2 = gSpeciesInfo[gBattleMons[gActiveBattler].species].types[1];
+    Fusion_ApplyBattleTypes(gActiveBattler);
     gBattleMons[gActiveBattler].ability = GetAbilityBySpecies(gBattleMons[gActiveBattler].species, gBattleMons[gActiveBattler].abilityNum);
 
     // check knocked off item

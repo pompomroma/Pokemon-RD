@@ -1,6 +1,7 @@
 #include "global.h"
 #include "gflib.h"
 #include "data.h"
+#include "pokemon_fusion.h"
 #include "item.h"
 #include "item_menu.h"
 #include "link.h"
@@ -1375,9 +1376,14 @@ static void MoveSelectionDisplayMoveNames(void)
 
     for (i = 0; i < MAX_MON_MOVES; ++i)
     {
+        u8 fusionMoveName[MOVE_NAME_LENGTH + 1];
+
         MoveSelectionDestroyCursorAt(i);
         StringCopy(gDisplayedStringBattle, gText_MoveInterfaceDynamicColors);
-        StringAppend(gDisplayedStringBattle, gMoveNames[moveInfo->moves[i]]);
+        if (Fusion_GetMoveNameForBattler(gActiveBattler, moveInfo->moves[i], fusionMoveName))
+            StringAppend(gDisplayedStringBattle, fusionMoveName);
+        else
+            StringAppend(gDisplayedStringBattle, gMoveNames[moveInfo->moves[i]]);
         BattlePutTextOnWindow(gDisplayedStringBattle, i + 3);
         if (moveInfo->moves[i] != MOVE_NONE)
             ++gNumberOfMovesToChoose;

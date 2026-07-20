@@ -13,6 +13,7 @@
 #include "menu.h"
 #include "constants/items.h"
 #include "data.h"
+#include "pokemon_fusion.h"
 #include "item.h"
 #include "constants/party_menu.h"
 #include "trade.h"
@@ -2270,7 +2271,11 @@ static void BufferMonMoveI(u8 i)
 
     sMonSummaryScreen->numMoves++;
     sMonSummaryScreen->moveTypes[i] = gBattleMoves[sMonSummaryScreen->moveIds[i]].type;
-    StringCopy(sMonSummaryScreen->summary.moveNameStrBufs[i], gMoveNames[sMonSummaryScreen->moveIds[i]]);
+    if (!Fusion_GetMoveNameForMon(&sMonSummaryScreen->currentMon.box, sMonSummaryScreen->moveIds[i], sMonSummaryScreen->summary.moveNameStrBufs[i]))
+        StringCopy(sMonSummaryScreen->summary.moveNameStrBufs[i], gMoveNames[sMonSummaryScreen->moveIds[i]]);
+    else
+        sMonSummaryScreen->moveTypes[i] = Fusion_GetSignatureMoveType(GetMonData(&sMonSummaryScreen->currentMon, MON_DATA_SPECIES, NULL),
+                                                                      Fusion_GetPartnerSpecies(&sMonSummaryScreen->currentMon.box));
 
     if (i >= 4 && sMonSummaryScreen->mode == PSS_MODE_SELECT_MOVE)
     {

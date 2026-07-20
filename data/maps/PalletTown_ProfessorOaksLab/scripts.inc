@@ -1126,6 +1126,11 @@ PalletTown_ProfessorOaksLab_EventScript_ChoseStarter::
 	waitmessage
 	playfanfare MUS_OBTAIN_KEY_ITEM
 	waitfanfare
+	closemessage
+	textcolor NPC_TEXT_COLOR_MALE
+	msgbox PalletTown_ProfessorOaksLab_Text_OakGivesFusionStone
+	call EventScript_RestorePrevTextColor
+	giveitem_msg PalletTown_ProfessorOaksLab_Text_ReceivedFusionStone, ITEM_FUSION_STONE, 1, MUS_OBTAIN_KEY_ITEM
 	msgbox Text_GiveNicknameToThisMon, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, YES, EventScript_GiveNicknameToStarter
 	goto_if_eq VAR_RESULT, NO, PalletTown_ProfessorOaksLab_EventScript_RivalPicksStarter

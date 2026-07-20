@@ -756,6 +756,22 @@ struct ExternalEventFlags
 
 } __attribute__((packed));/*size = 0x15*/
 
+// One active fusion created by the FUSION STONE. The record is keyed by the
+// base Pokémon's personality + OT ID; everything else about the fused mon
+// (stats, typing, sprite, signature move) is derived at runtime from
+// partnerSpecies. partnerSpecies == SPECIES_NONE (0) marks a free slot.
+struct FusionRecord
+{
+    u32 personality;        // personality of the fused (base) Pokémon
+    u32 otId;               // OT ID of the fused (base) Pokémon
+    u32 partnerPersonality; // personality of the absorbed partner
+    u16 partnerSpecies;
+    u8 partnerLevel;        // level the partner had when fused (for unfusing)
+    u8 flags;
+};
+
+#define FUSION_RECORDS_COUNT 24 // 24 * 16 = 384 bytes of former unused_348C space
+
 struct SaveBlock1
 {
     /*0x0000*/ struct Coords16 pos;
@@ -806,7 +822,8 @@ struct SaveBlock1
     /*0x30D0*/ struct Roamer roamer;
     /*0x30EC*/ struct EnigmaBerry enigmaBerry;
     /*0x3120*/ struct MysteryGiftSave mysteryGift;
-    /*0x348C*/ u8 unused_348C[400];
+    /*0x348C*/ struct FusionRecord fusionRecords[FUSION_RECORDS_COUNT];
+    /*0x360C*/ u8 unused_348C[16];
     /*0x361C*/ struct RamScript ramScript;
     /*0x3A08*/ struct RecordMixingGift recordMixingGift; // unused
     /*0x3A18*/ u8 seen2[DEX_FLAGS_NO];

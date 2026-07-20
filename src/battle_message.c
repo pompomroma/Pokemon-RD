@@ -4,6 +4,11 @@
 #include "battle_anim.h"
 #include "strings.h"
 #include "battle_message.h"
+#include "pokemon_fusion.h"
+
+// Holds a generated per-fusion signature move name while a battle string
+// referencing it is being expanded.
+static u8 sFusionMoveName[MOVE_NAME_LENGTH + 1];
 #include "link.h"
 #include "event_scripts.h"
 #include "event_data.h"
@@ -1966,12 +1971,16 @@ u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst)
             case B_TXT_CURRENT_MOVE: // current move name
                 if (sBattleMsgDataPtr->currentMove >= MOVES_COUNT)
                     toCpy = (const u8 *)&sATypeMove_Table[gBattleStruct->stringMoveType];
+                else if (Fusion_GetMoveNameForBattler(gBattlerAttacker, sBattleMsgDataPtr->currentMove, sFusionMoveName))
+                    toCpy = sFusionMoveName;
                 else
                     toCpy = gMoveNames[sBattleMsgDataPtr->currentMove];
                 break;
             case B_TXT_LAST_MOVE: // originally used move name
                 if (sBattleMsgDataPtr->originallyUsedMove >= MOVES_COUNT)
                     toCpy = (const u8 *)&sATypeMove_Table[gBattleStruct->stringMoveType];
+                else if (Fusion_GetMoveNameForBattler(gBattlerAttacker, sBattleMsgDataPtr->originallyUsedMove, sFusionMoveName))
+                    toCpy = sFusionMoveName;
                 else
                     toCpy = gMoveNames[sBattleMsgDataPtr->originallyUsedMove];
                 break;
@@ -2238,7 +2247,10 @@ static void ExpandBattleTextBuffPlaceholders(const u8 *src, u8 *dst)
             srcId += src[srcId + 1] + 3;
             break;
         case B_BUFF_MOVE: // move name
-            StringAppend(dst, gMoveNames[T1_READ_16(&src[srcId + 1])]);
+            if (Fusion_GetMoveNameForBattler(gBattlerAttacker, T1_READ_16(&src[srcId + 1]), sFusionMoveName))
+                StringAppend(dst, sFusionMoveName);
+            else
+                StringAppend(dst, gMoveNames[T1_READ_16(&src[srcId + 1])]);
             srcId += 3;
             break;
         case B_BUFF_TYPE: // type name

@@ -22,6 +22,7 @@
 #include "strings.h"
 #include "overworld.h"
 #include "party_menu.h"
+#include "pokemon_fusion.h"
 #include "field_specials.h"
 #include "berry.h"
 #include "constants/items.h"
@@ -2093,8 +2094,12 @@ static u16 CalculateBoxMonChecksum(struct BoxPokemon *boxMon)
 #define CALC_STAT(base, iv, ev, statIndex, field)               \
 {                                                               \
     u8 baseStat = gSpeciesInfo[species].base;                   \
-    s32 n = (((2 * baseStat + iv + ev / 4) * level) / 100) + 5; \
-    u8 nature = GetNature(mon);                                 \
+    s32 n;                                                      \
+    u8 nature;                                                  \
+    if (fusionPartner != SPECIES_NONE)                          \
+        baseStat = Fusion_GetBaseStat(species, fusionPartner, statIndex); \
+    n = (((2 * baseStat + iv + ev / 4) * level) / 100) + 5;     \
+    nature = GetNature(mon);                                    \
     n = ModifyStatByNature(nature, n, statIndex);               \
     SetMonData(mon, field, &n);                                 \
 }
@@ -2116,6 +2121,7 @@ void CalculateMonStats(struct Pokemon *mon)
     s32 spDefenseIV = GetMonData(mon, MON_DATA_SPDEF_IV, NULL);
     s32 spDefenseEV = GetMonData(mon, MON_DATA_SPDEF_EV, NULL);
     u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
+    u16 fusionPartner = Fusion_GetPartnerSpecies(&mon->box);
     s32 level = GetLevelFromMonExp(mon);
     s32 newMaxHP;
 
@@ -2127,7 +2133,11 @@ void CalculateMonStats(struct Pokemon *mon)
     }
     else
     {
-        s32 n = 2 * gSpeciesInfo[species].baseHP + hpIV;
+        s32 baseHP = gSpeciesInfo[species].baseHP;
+        s32 n;
+        if (fusionPartner != SPECIES_NONE)
+            baseHP = Fusion_GetBaseStat(species, fusionPartner, STAT_HP);
+        n = 2 * baseHP + hpIV;
         newMaxHP = (((n + hpEV / 4) * level) / 100) + level + 10;
     }
 
@@ -3952,6 +3962,11 @@ static void CopyPlayerPartyMonToBattleData(u8 battlerId, u8 partyIndex)
     gBattleMons[battlerId].otId = GetMonData(&gPlayerParty[partyIndex], MON_DATA_OT_ID, NULL);
     gBattleMons[battlerId].type1 = gSpeciesInfo[gBattleMons[battlerId].species].types[0];
     gBattleMons[battlerId].type2 = gSpeciesInfo[gBattleMons[battlerId].species].types[1];
+    {
+        u16 fusionPartner = Fusion_GetPartnerSpecies(&gPlayerParty[partyIndex].box);
+        if (fusionPartner != SPECIES_NONE)
+            Fusion_GetTypes(gBattleMons[battlerId].species, fusionPartner, &gBattleMons[battlerId].type1, &gBattleMons[battlerId].type2);
+    }
     gBattleMons[battlerId].ability = GetAbilityBySpecies(gBattleMons[battlerId].species, gBattleMons[battlerId].abilityNum);
     GetMonData(&gPlayerParty[partyIndex], MON_DATA_NICKNAME, nickname);
     StringCopy_Nickname(gBattleMons[battlerId].nickname, nickname);

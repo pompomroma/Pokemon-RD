@@ -2,6 +2,7 @@
 #include "gflib.h"
 #include "decompress.h"
 #include "data.h"
+#include "pokemon_fusion.h"
 
 struct PicData
 {
@@ -82,11 +83,14 @@ void LoadPicPaletteByTagOrSlot(u16 species, u32 otId, u32 personality, u8 palett
         {
             sCreatingSpriteTemplate.paletteTag = TAG_NONE;
             LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality), OBJ_PLTT_ID(paletteSlot), PLTT_SIZE_4BPP);
+            Fusion_BlendMonSpritePalette(personality, otId, OBJ_PLTT_ID(paletteSlot));
         }
         else
         {
+            const struct CompressedSpritePalette *pal = GetMonSpritePalStructFromOtIdPersonality(species, otId, personality);
             sCreatingSpriteTemplate.paletteTag = paletteTag;
-            LoadCompressedSpritePalette(GetMonSpritePalStructFromOtIdPersonality(species, otId, personality));
+            LoadCompressedSpritePalette(pal);
+            Fusion_BlendMonSpritePalette(personality, otId, OBJ_PLTT_ID(IndexOfSpritePaletteTag(pal->tag)));
         }
     }
     else
@@ -107,9 +111,14 @@ void LoadPicPaletteByTagOrSlot(u16 species, u32 otId, u32 personality, u8 palett
 void LoadPicPaletteBySlot(u16 species, u32 otId, u32 personality, u8 paletteSlot, bool8 isTrainer)
 {
     if (!isTrainer)
+    {
         LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality), BG_PLTT_ID(paletteSlot), PLTT_SIZE_4BPP);
+        Fusion_BlendMonSpritePalette(personality, otId, BG_PLTT_ID(paletteSlot));
+    }
     else
+    {
         LoadCompressedPalette(gTrainerFrontPicPaletteTable[species].data, BG_PLTT_ID(paletteSlot), PLTT_SIZE_4BPP);
+    }
 }
 
 void AssignSpriteAnimsTable(bool8 isTrainer)

@@ -375,6 +375,7 @@ gBattleAnims_Moves::
 	.4byte Move_WATER_PULSE
 	.4byte Move_DOOM_DESIRE
 	.4byte Move_PSYCHO_BOOST
+	.4byte Move_FUSION_BURST
 	.4byte Move_COUNT @ cannot be reached, because last move is Psycho Boost
 
 	.align 2
@@ -9721,6 +9722,49 @@ Move_PSYCHO_BOOST:
 	blendoff
 	call UnsetPsychicBackground
 	end
+
+Move_FUSION_BURST:
+	loadspritegfx ANIM_TAG_ORBS
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 4, 0, 16, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_MEGA_KICK, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_BlendBattleAnimPal, 10, F_PAL_ATTACKER, 2, 0, 12, RGB(22, 10, 31)
+	createvisualtask AnimTask_ShakeMon2, 2, ANIM_ATTACKER, 1, 0, 12, 1
+	waitforvisualfinish
+	createvisualtask AnimTask_BlendBattleAnimPal, 10, F_PAL_ATTACKER, 2, 12, 0, RGB(22, 10, 31)
+	createsoundtask SoundTask_LoopSEAdjustPanning, SE_M_HYPER_BEAM2, SOUND_PAN_ATTACKER, SOUND_PAN_TARGET, 1, 15, 0, 5
+	createvisualtask AnimTask_ShakeMon, 2, ANIM_ATTACKER, 0, 4, 40, 1
+	createvisualtask AnimTask_FlashAnimTagWithColor, 2, ANIM_TAG_ORBS, 1, 12, RGB(22, 10, 31), 16, 0, 0
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	createvisualtask AnimTask_ShakeMon2, 2, ANIM_TARGET, 5, 0, 40, 1
+	createvisualtask AnimTask_BlendBattleAnimPal, 10, F_PAL_TARGET, 2, 0, 13, RGB_WHITE
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	createvisualtask AnimTask_HorizontalShake, 5, (MAX_BATTLERS_COUNT + 1), 8, 30
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	call FusionBurstOrbs
+	createvisualtask AnimTask_BlendBattleAnimPal, 10, F_PAL_TARGET, 2, 13, 0, RGB_WHITE
+	waitforvisualfinish
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 4, 16, 0, RGB_BLACK
+	waitforvisualfinish
+	end
+
+FusionBurstOrbs:
+	createsprite gHyperBeamOrbSpriteTemplate, ANIM_TARGET, 2
+	createsprite gHyperBeamOrbSpriteTemplate, ANIM_TARGET, 2
+	delay 1
+	return
 
 Move_KNOCK_OFF:
 	loadspritegfx ANIM_TAG_SLAM_HIT_2

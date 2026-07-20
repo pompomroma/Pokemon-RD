@@ -39,6 +39,7 @@
 #include "player_pc.h"
 #include "pokedex.h"
 #include "pokemon.h"
+#include "pokemon_fusion.h"
 #include "pokemon_icon.h"
 #include "pokemon_jump.h"
 #include "pokemon_special_anim.h"
@@ -243,6 +244,9 @@ static void PartyMenuRemoveWindow(u8 *windowId);
 static void CB2_SetUpExitToBattleScreen(void);
 static void Task_ClosePartyMenuAfterText(u8 taskId);
 static void FinishTwoMonAction(u8 taskId);
+static void Task_TryFuseSelectedMons(u8 taskId);
+static void Task_ChooseNewMonForFusion(u8 taskId);
+static void CantFuseWithSelectedMon(u8 taskId);
 static void CancelParticipationPrompt(u8 taskId);
 static void DisplayCancelChooseMonYesNo(u8 taskId);
 static void Task_CancelChooseMonYesNo(u8 taskId);
@@ -1057,6 +1061,8 @@ static u8 GetPartyBoxPaletteFlags(u8 slot, u8 animNum)
     }
     if (gPartyMenu.action == PARTY_ACTION_SOFTBOILED && slot == gPartyMenu.slotId )
         palFlags |= PARTY_PAL_TO_SOFTBOIL;
+    if (gPartyMenu.action == PARTY_ACTION_FUSION && slot == gPartyMenu.slotId)
+        palFlags |= PARTY_PAL_TO_SOFTBOIL;
     return palFlags;
 }
 
@@ -1143,7 +1149,7 @@ void Task_HandleChooseMonInput(u8 taskId)
 
 static s8 *GetCurrentPartySlotPtr(void)
 {
-    if (gPartyMenu.action == PARTY_ACTION_SWITCH || gPartyMenu.action == PARTY_ACTION_SOFTBOILED)
+    if (gPartyMenu.action == PARTY_ACTION_SWITCH || gPartyMenu.action == PARTY_ACTION_SOFTBOILED || gPartyMenu.action == PARTY_ACTION_FUSION)
         return &gPartyMenu.slotId2;
     else
         return &gPartyMenu.slotId;
@@ -1160,6 +1166,10 @@ static void HandleChooseMonSelection(u8 taskId, s8 *slotPtr)
         case PARTY_ACTION_SOFTBOILED:
             if (IsSelectedMonNotEgg((u8 *)slotPtr))
                 Task_TryUseSoftboiledOnPartyMon(taskId);
+            break;
+        case PARTY_ACTION_FUSION:
+            if (IsSelectedMonNotEgg((u8 *)slotPtr))
+                Task_TryFuseSelectedMons(taskId);
             break;
         case PARTY_ACTION_USE_ITEM:
             if (IsSelectedMonNotEgg((u8 *)slotPtr))
@@ -1235,6 +1245,7 @@ static void HandleChooseMonCancel(u8 taskId, s8 *slotPtr)
         break;
     case PARTY_ACTION_SWITCH:
     case PARTY_ACTION_SOFTBOILED:
+    case PARTY_ACTION_FUSION:
         PlaySE(SE_SELECT);
         FinishTwoMonAction(taskId);
         break;
@@ -5322,6 +5333,117 @@ static bool8 MonCanEvolve(void)
         return FALSE;
     else
         return TRUE;
+}
+
+static const u8 sText_MonsFusedIntoOne[] = _("{STR_VAR_1} and {STR_VAR_2} fused\ninto {STR_VAR_3}!{PAUSE_UNTIL_PRESS}");
+static const u8 sText_FusionWasUndone[] = _("{STR_VAR_1} returned to normal!\n{STR_VAR_2} came back!{PAUSE_UNTIL_PRESS}");
+
+// The FUSION STONE was used on the mon in gPartyMenu.slotId. If it is not
+// fused yet, pick a partner to absorb; if it is, undo the fusion.
+void ItemUseCB_FusionStone(u8 taskId, TaskFunc func)
+{
+    struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
+
+    PlaySE(SE_SELECT);
+    if (GetMonData(mon, MON_DATA_IS_EGG, NULL))
+    {
+        gPartyMenuUseExitCallback = FALSE;
+        DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
+        ScheduleBgCopyTilemapToVram(2);
+        gTasks[taskId].func = func;
+    }
+    else if (Fusion_IsMonFused(&mon->box))
+    {
+        if (CalculatePlayerPartyCount() >= PARTY_SIZE)
+        {
+            gPartyMenuUseExitCallback = FALSE;
+            DisplayPartyMenuMessage(gText_YourPartysFull, TRUE);
+            ScheduleBgCopyTilemapToVram(2);
+            gTasks[taskId].func = func;
+        }
+        else
+        {
+            GetMonNickname(mon, gStringVar1);
+            StringCopy(gStringVar2, gSpeciesNames[Fusion_GetPartnerSpecies(&mon->box)]);
+            PlaySE(SE_USE_ITEM);
+            Fusion_UnfuseParty(gPartyMenu.slotId);
+            StringExpandPlaceholders(gStringVar4, sText_FusionWasUndone);
+            DisplayPartyMenuMessage(gStringVar4, TRUE);
+            ScheduleBgCopyTilemapToVram(2);
+            gPartyMenuUseExitCallback = FALSE;
+            gTasks[taskId].func = Task_ClosePartyMenuAfterText;
+        }
+    }
+    else if (CalculatePlayerPartyCount() < 2 || !Fusion_HasFreeRecord())
+    {
+        gPartyMenuUseExitCallback = FALSE;
+        DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
+        ScheduleBgCopyTilemapToVram(2);
+        gTasks[taskId].func = func;
+    }
+    else
+    {
+        gPartyMenu.action = PARTY_ACTION_FUSION;
+        gPartyMenu.slotId2 = gPartyMenu.slotId;
+        AnimatePartySlot(gPartyMenu.slotId, 1);
+        DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON);
+        gTasks[taskId].func = Task_HandleChooseMonInput;
+    }
+}
+
+static void Task_TryFuseSelectedMons(u8 taskId)
+{
+    u8 slotA = gPartyMenu.slotId;
+    u8 slotB = gPartyMenu.slotId2;
+    u8 fusedSlot;
+
+    if (slotB >= PARTY_SIZE)
+    {
+        gPartyMenu.action = PARTY_ACTION_CHOOSE_MON;
+        DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);
+        gTasks[taskId].func = Task_HandleChooseMonInput;
+    }
+    else if (slotA == slotB
+          || Fusion_IsMonFused(&gPlayerParty[slotB].box)
+          || GetMonData(&gPlayerParty[slotB], MON_DATA_SPECIES, NULL) == SPECIES_NONE)
+    {
+        CantFuseWithSelectedMon(taskId);
+    }
+    else
+    {
+        GetMonNickname(&gPlayerParty[slotA], gStringVar1);
+        GetMonNickname(&gPlayerParty[slotB], gStringVar2);
+        PlaySE(SE_USE_ITEM);
+        if (!Fusion_FuseParty(slotA, slotB))
+        {
+            CantFuseWithSelectedMon(taskId);
+            return;
+        }
+        fusedSlot = (slotB < slotA) ? slotA - 1 : slotA;
+        GetMonNickname(&gPlayerParty[fusedSlot], gStringVar3);
+        StringExpandPlaceholders(gStringVar4, sText_MonsFusedIntoOne);
+        DisplayPartyMenuMessage(gStringVar4, TRUE);
+        ScheduleBgCopyTilemapToVram(2);
+        gPartyMenuUseExitCallback = FALSE;
+        gTasks[taskId].func = Task_ClosePartyMenuAfterText;
+    }
+}
+
+static void Task_ChooseNewMonForFusion(u8 taskId)
+{
+    if (IsPartyMenuTextPrinterActive() != TRUE)
+    {
+        DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON);
+        gTasks[taskId].func = Task_HandleChooseMonInput;
+    }
+}
+
+static void CantFuseWithSelectedMon(u8 taskId)
+{
+    PlaySE(SE_SELECT);
+    DisplayPartyMenuMessage(gText_WontHaveEffect, FALSE);
+    ScheduleBgCopyTilemapToVram(2);
+    gTasks[taskId].func = Task_ChooseNewMonForFusion;
 }
 
 u8 GetItemEffectType(u16 item)
