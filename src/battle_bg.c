@@ -641,24 +641,14 @@ static u8 GetBattleTerrainByMapScene(u8 mapBattleScene)
     return BATTLE_TERRAIN_PLAIN;
 }
 
-// "Brightening shader" equivalent for the GBA: lift the battle background
-// colors toward white while preserving hue. (The GBA has no shader hardware;
-// palette adjustment is the hardware-accurate way to brighten a scene.)
+// "Heavy shader" equivalent for the GBA (which has no shader hardware):
+// grade the battle background palette for punchy contrast, saturation, and
+// brightness. Shared with the overworld grade (see GradePalette_Cinematic).
 static void BrightenBattleTerrainPalette(u32 palOffset, u32 count)
 {
     u16 *pal = &gPlttBufferUnfaded[palOffset];
-    u32 i;
 
-    for (i = 0; i < count; i++)
-    {
-        s32 r = GET_R(pal[i]);
-        s32 g = GET_G(pal[i]);
-        s32 b = GET_B(pal[i]);
-        r += (31 - r) / 8;
-        g += (31 - g) / 8;
-        b += (31 - b) / 8;
-        pal[i] = RGB(r, g, b);
-    }
+    GradePalette_Cinematic(pal, count);
     LoadPalette(pal, palOffset, count * sizeof(u16));
 }
 

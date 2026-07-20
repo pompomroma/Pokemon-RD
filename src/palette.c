@@ -873,6 +873,47 @@ void TintPalette_CustomTone(u16 *palette, u16 count, u16 rTone, u16 gTone, u16 b
     }
 }
 
+// "Heavy shader" cinematic color grading for the GBA (which has no shader
+// hardware): per 5-bit channel, boost contrast around the midpoint, push
+// saturation away from the color's own luma, and lift brightness slightly.
+// Hue is preserved, so scenes read as punchier and more vivid.
+static s32 ClampChannel(s32 c)
+{
+    if (c < 0)
+        return 0;
+    if (c > 31)
+        return 31;
+    return c;
+}
+
+void GradePalette_Cinematic(u16 *palette, u16 count)
+{
+    s32 i;
+
+    for (i = 0; i < count; i++)
+    {
+        s32 r = GET_R(palette[i]);
+        s32 g = GET_G(palette[i]);
+        s32 b = GET_B(palette[i]);
+        // Per-color luma (approx 0.3R + 0.59G + 0.11B in Q8.8).
+        s32 luma = (r * 77 + g * 151 + b * 28) >> 8;
+
+        // Contrast x1.35 about the midpoint (16).
+        r = 16 + ((r - 16) * 173 >> 7);
+        g = 16 + ((g - 16) * 173 >> 7);
+        b = 16 + ((b - 16) * 173 >> 7);
+        // Saturation x1.4: push each channel away from the luma.
+        r = luma + ((r - luma) * 179 >> 7);
+        g = luma + ((g - luma) * 179 >> 7);
+        b = luma + ((b - luma) * 179 >> 7);
+        // Brightness lift.
+        r += (31 - r) >> 3;
+        g += (31 - g) >> 3;
+        b += (31 - b) >> 3;
+        palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
+    }
+}
+
 void CopyPaletteInvertedTint(const u16 *src, u16 *dst, u16 count, u8 tone)
 {
     s32 r, g, b, i;
