@@ -488,6 +488,7 @@ static const u8 sText_ItIsRaining[] = _("It is raining."); // used only in RSE w
 static const u8 sText_SandstormIsRaging[] = _("A sandstorm is raging.");
 static const u8 sText_BoxIsFull[] = _("The BOX is full!\nYou can't catch any more!\p");
 static const u8 sText_EnigmaBerry[] = _("ENIGMA BERRY");
+static const u8 sText_FusionAuraFlared[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s fusion\naura flared!");
 static const u8 sText_BerrySuffix[] = _(" BERRY");
 static const u8 sText_Enigma[] = _("ナゾ");
 static const u8 sText_PkmnsItemCuredParalysis[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s {B_LAST_ITEM}\ncured paralysis!");
@@ -893,7 +894,8 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT - BATTLESTRINGS_TABLE_ST
     [STRINGID_TRAINER1MON1COMEBACK - BATTLESTRINGS_TABLE_START]          = sText_Trainer1RecallPkmn1,
     [STRINGID_TRAINER1WINTEXT - BATTLESTRINGS_TABLE_START]               = sText_Trainer1WinText,
     [STRINGID_TRAINER1MON2COMEBACK - BATTLESTRINGS_TABLE_START]          = sText_Trainer1RecallPkmn2,
-    [STRINGID_TRAINER1MON1AND2COMEBACK - BATTLESTRINGS_TABLE_START]      = sText_Trainer1RecallBoth
+    [STRINGID_TRAINER1MON1AND2COMEBACK - BATTLESTRINGS_TABLE_START]      = sText_Trainer1RecallBoth,
+    [STRINGID_FUSIONAURAFLARED - BATTLESTRINGS_TABLE_START]              = sText_FusionAuraFlared
 };
 
 const u16 gMissStringIds[] =

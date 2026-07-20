@@ -1064,3 +1064,73 @@ bool32 ShouldPlayNormalMonCry(struct Pokemon *mon)
 
     return TRUE;
 }
+
+// Universal hit-impact feedback: shakes the battle backgrounds whenever a
+// Pokémon takes hit damage, harder (plus a white flash) on super-effective
+// hits.
+#define tTimer     data[0]
+#define tAmplitude data[1]
+#define tDuration  data[2]
+#define tSavedBg1  data[3]
+#define tSavedBg2  data[4]
+#define tSavedBg3  data[5]
+#define tFlashed   data[6]
+
+static void Task_HitImpactShake(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+    s16 offset;
+
+    tTimer++;
+    offset = (tTimer & 2) ? tAmplitude : -tAmplitude;
+    gBattle_BG1_X = tSavedBg1 + offset;
+    gBattle_BG2_X = tSavedBg2 + offset;
+    gBattle_BG3_X = tSavedBg3 + offset;
+    if (tFlashed && tTimer == 4)
+        BlendPalettes(PALETTES_ALL, 0, RGB_WHITE);
+    if (tTimer >= tDuration)
+    {
+        gBattle_BG1_X = tSavedBg1;
+        gBattle_BG2_X = tSavedBg2;
+        gBattle_BG3_X = tSavedBg3;
+        if (tFlashed)
+            BlendPalettes(PALETTES_ALL, 0, RGB_WHITE);
+        DestroyTask(taskId);
+    }
+}
+
+void StartHitImpactEffect(u8 battler)
+{
+    u8 taskId;
+    s16 *data;
+
+    if (FuncIsActiveTask(Task_HitImpactShake))
+        return;
+    taskId = CreateTask(Task_HitImpactShake, 10);
+    data = gTasks[taskId].data;
+    tTimer = 0;
+    tSavedBg1 = gBattle_BG1_X;
+    tSavedBg2 = gBattle_BG2_X;
+    tSavedBg3 = gBattle_BG3_X;
+    if (gMoveResultFlags & MOVE_RESULT_SUPER_EFFECTIVE)
+    {
+        tAmplitude = 4;
+        tDuration = 14;
+        tFlashed = TRUE;
+        BlendPalettes(PALETTES_ALL, 6, RGB_WHITE);
+    }
+    else
+    {
+        tAmplitude = 2;
+        tDuration = 8;
+        tFlashed = FALSE;
+    }
+}
+
+#undef tTimer
+#undef tAmplitude
+#undef tDuration
+#undef tSavedBg1
+#undef tSavedBg2
+#undef tSavedBg3
+#undef tFlashed

@@ -131,12 +131,19 @@ static bool8 Swirl_End(struct Task *task);
 static bool8 Blur_Init(struct Task *task);
 static bool8 Blur_Main(struct Task *task);
 static bool8 Blur_End(struct Task *task);
+static bool8 ZoomPulse_Init(struct Task *task);
+static bool8 ZoomPulse_ZoomOut(struct Task *task);
+static bool8 ZoomPulse_SnapIn(struct Task *task);
+static bool8 ZoomPulse_Flash(struct Task *task);
+static bool8 ZoomPulse_FadeOut(struct Task *task);
+static bool8 ZoomPulse_End(struct Task *task);
 static bool8 Transition_StartIntro(struct Task *task);
 static bool8 Transition_WaitForIntro(struct Task *task);
 static bool8 Transition_StartMain(struct Task *task);
 static bool8 Transition_WaitForMain(struct Task *task);
 
 static void Task_Blur(u8 taskId);
+static void Task_ZoomPulse(u8 taskId);
 static void Task_Swirl(u8 taskId);
 static void Task_Shuffle(u8 taskId);
 static void Task_BigPokeball(u8 taskId);
@@ -243,6 +250,7 @@ static const TaskFunc sTasks_Main[] =
     [B_TRANSITION_LANCE]           = Task_Lance,
     [B_TRANSITION_BLUE]            = Task_Blue,
     [B_TRANSITION_SPIRAL]          = Task_Spiral,
+    [B_TRANSITION_ZOOM]            = Task_ZoomPulse,
 };
 
 static const TransitionStateFunc sTaskHandlers[] =
@@ -258,6 +266,16 @@ static const TransitionStateFunc sBlur_Funcs[] =
     Blur_Init,
     Blur_Main,
     Blur_End,
+};
+
+static const TransitionStateFunc sZoomPulse_Funcs[] =
+{
+    ZoomPulse_Init,
+    ZoomPulse_ZoomOut,
+    ZoomPulse_SnapIn,
+    ZoomPulse_Flash,
+    ZoomPulse_FadeOut,
+    ZoomPulse_End,
 };
 
 static const TransitionStateFunc sSwirl_Funcs[] =
@@ -757,6 +775,103 @@ static bool8 Blur_End(struct Task *task)
 {
     if (!gPaletteFade.active)
         DestroyTask(FindTaskIdByFunc(Task_Blur));
+    return FALSE;
+}
+
+//--------------------
+// B_TRANSITION_ZOOM
+//--------------------
+// A "camera zoom" styled transition: the frozen field pixelates away (zoom
+// out), snaps back into focus with a white flash, then zooms fully out into
+// the battle fade. Built on hardware mosaic + palette blends.
+
+static void Task_ZoomPulse(u8 taskId)
+{
+    while (sZoomPulse_Funcs[gTasks[taskId].tState](&gTasks[taskId]));
+}
+
+static bool8 ZoomPulse_Init(struct Task *task)
+{
+    SetGpuReg(REG_OFFSET_MOSAIC, 0);
+    SetGpuRegBits(REG_OFFSET_BG1CNT, BGCNT_MOSAIC);
+    SetGpuRegBits(REG_OFFSET_BG2CNT, BGCNT_MOSAIC);
+    SetGpuRegBits(REG_OFFSET_BG3CNT, BGCNT_MOSAIC);
+    task->tCounter = 0;
+    task->tState++;
+    return TRUE;
+}
+
+static bool8 ZoomPulse_ZoomOut(struct Task *task)
+{
+    if (task->tDelay != 0)
+    {
+        task->tDelay--;
+    }
+    else
+    {
+        task->tDelay = 1;
+        task->tCounter++;
+        SetGpuReg(REG_OFFSET_MOSAIC, (task->tCounter & 0xF) + ((task->tCounter & 0xF) << 4));
+        if (task->tCounter >= 8)
+            task->tState++;
+    }
+    return FALSE;
+}
+
+static bool8 ZoomPulse_SnapIn(struct Task *task)
+{
+    if (task->tCounter != 0)
+    {
+        task->tCounter--;
+        SetGpuReg(REG_OFFSET_MOSAIC, (task->tCounter & 0xF) + ((task->tCounter & 0xF) << 4));
+    }
+    else
+    {
+        BlendPalettes(PALETTES_ALL, 8, RGB_WHITE);
+        task->tDelay = 3;
+        task->tState++;
+    }
+    return FALSE;
+}
+
+static bool8 ZoomPulse_Flash(struct Task *task)
+{
+    if (task->tDelay != 0)
+    {
+        task->tDelay--;
+    }
+    else
+    {
+        BlendPalettes(PALETTES_ALL, 0, RGB_WHITE);
+        task->tCounter = 0;
+        task->tState++;
+    }
+    return FALSE;
+}
+
+static bool8 ZoomPulse_FadeOut(struct Task *task)
+{
+    if (task->tDelay != 0)
+    {
+        task->tDelay--;
+    }
+    else
+    {
+        task->tDelay = 1;
+        task->tCounter++;
+        if (task->tCounter == 8)
+            BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);
+        SetGpuReg(REG_OFFSET_MOSAIC, (task->tCounter & 0xF) + ((task->tCounter & 0xF) << 4));
+        if (task->tCounter > 14)
+            task->tState++;
+    }
+    return FALSE;
+}
+
+static bool8 ZoomPulse_End(struct Task *task)
+{
+    if (!gPaletteFade.active)
+        DestroyTask(FindTaskIdByFunc(Task_ZoomPulse));
     return FALSE;
 }
 

@@ -6,6 +6,7 @@
 #include "berry.h"
 #include "random.h"
 #include "pokemon.h"
+#include "pokemon_fusion.h"
 #include "string_util.h"
 #include "field_weather.h"
 #include "event_data.h"
@@ -1704,6 +1705,19 @@ u8 AbilityBattleEffects(u8 caseID, u8 battler, u8 ability, u8 special, u16 moveA
         case ABILITYEFFECT_ON_SWITCHIN: // 0
             if (gBattlerAttacker >= gBattlersCount)
                 gBattlerAttacker = battler;
+            // A fused Pokémon flares its fusion aura the first time it
+            // enters this battle (mega-evolution style entrance).
+            if (!(gBattleStruct->fusionAuraPlayed & gBitTable[battler])
+             && Fusion_GetBattlerPartyMon(battler) != NULL
+             && Fusion_IsMonFused(&Fusion_GetBattlerPartyMon(battler)->box)
+             && gBattleMons[battler].hp != 0)
+            {
+                gBattleStruct->fusionAuraPlayed |= gBitTable[battler];
+                gBattleScripting.battler = battler;
+                BattleScriptPushCursorAndCallback(BattleScript_FusionAuraFlares);
+                effect++;
+                break;
+            }
             switch (gLastUsedAbility)
             {
             case ABILITYEFFECT_SWITCH_IN_WEATHER:

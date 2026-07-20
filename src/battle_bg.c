@@ -641,6 +641,27 @@ static u8 GetBattleTerrainByMapScene(u8 mapBattleScene)
     return BATTLE_TERRAIN_PLAIN;
 }
 
+// "Brightening shader" equivalent for the GBA: lift the battle background
+// colors toward white while preserving hue. (The GBA has no shader hardware;
+// palette adjustment is the hardware-accurate way to brighten a scene.)
+static void BrightenBattleTerrainPalette(u32 palOffset, u32 count)
+{
+    u16 *pal = &gPlttBufferUnfaded[palOffset];
+    u32 i;
+
+    for (i = 0; i < count; i++)
+    {
+        s32 r = GET_R(pal[i]);
+        s32 g = GET_G(pal[i]);
+        s32 b = GET_B(pal[i]);
+        r += (31 - r) / 8;
+        g += (31 - g) / 8;
+        b += (31 - b) / 8;
+        pal[i] = RGB(r, g, b);
+    }
+    LoadPalette(pal, palOffset, count * sizeof(u16));
+}
+
 static void LoadBattleTerrainGfx(u16 terrain)
 {
     if (terrain >= NELEMS(sBattleTerrainTable))
@@ -649,6 +670,7 @@ static void LoadBattleTerrainGfx(u16 terrain)
     LZDecompressVram(sBattleTerrainTable[terrain].tileset, (void *)BG_CHAR_ADDR(2));
     LZDecompressVram(sBattleTerrainTable[terrain].tilemap, (void *)BG_SCREEN_ADDR(26));
     LoadCompressedPalette(sBattleTerrainTable[terrain].palette, BG_PLTT_ID(2), 3 * PLTT_SIZE_4BPP);
+    BrightenBattleTerrainPalette(BG_PLTT_ID(2), 3 * 16);
 }
 
 static void LoadBattleTerrainEntryGfx(u16 terrain)
@@ -1099,6 +1121,7 @@ bool8 LoadChosenBattleElement(u8 caseId)
     case 5:
         battleScene = GetBattleTerrainOverride();
         LoadCompressedPalette(sBattleTerrainTable[battleScene].palette, BG_PLTT_ID(2), 3 * PLTT_SIZE_4BPP);
+        BrightenBattleTerrainPalette(BG_PLTT_ID(2), 3 * 16);
         break;
     case 6:
         LoadBattleMenuWindowGfx();
