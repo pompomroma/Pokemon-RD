@@ -6073,6 +6073,54 @@
       "battleUsage": 0,
       "battleUseFunc": "NULL",
       "secondaryId": 0
+    },
+    {
+      "itemId": "ITEM_MEGA_STONE",
+      "english": "MEGA STONE",
+      "price": 8000,
+      "holdEffect": "HOLD_EFFECT_NONE",
+      "holdEffectParam": 0,
+      "description_english": "A radiant stone. Have a\\nPOKéMON hold it to Mega\\nEvolve it in battle.",
+      "importance": 0,
+      "registrability": 0,
+      "pocket": "POCKET_ITEMS",
+      "type": "ITEM_TYPE_BAG_MENU",
+      "fieldUseFunc": "NULL",
+      "battleUsage": 0,
+      "battleUseFunc": "NULL",
+      "secondaryId": 0
+    },
+    {
+      "itemId": "ITEM_Z_CRYSTAL",
+      "english": "Z CRYSTAL",
+      "price": 8000,
+      "holdEffect": "HOLD_EFFECT_NONE",
+      "holdEffectParam": 0,
+      "description_english": "A shining crystal. Its\\nholder's first attack\\nbecomes a mighty Z-Move.",
+      "importance": 0,
+      "registrability": 0,
+      "pocket": "POCKET_ITEMS",
+      "type": "ITEM_TYPE_BAG_MENU",
+      "fieldUseFunc": "NULL",
+      "battleUsage": 0,
+      "battleUseFunc": "NULL",
+      "secondaryId": 0
+    },
+    {
+      "itemId": "ITEM_DYNA_BAND",
+      "english": "DYNA BAND",
+      "price": 8000,
+      "holdEffect": "HOLD_EFFECT_NONE",
+      "holdEffectParam": 0,
+      "description_english": "A pulsing band. Its holder\\nDynamaxes in battle,\\nswelling to giant size.",
+      "importance": 0,
+      "registrability": 0,
+      "pocket": "POCKET_ITEMS",
+      "type": "ITEM_TYPE_BAG_MENU",
+      "fieldUseFunc": "NULL",
+      "battleUsage": 0,
+      "battleUseFunc": "NULL",
+      "secondaryId": 0
     }
   ]
 }

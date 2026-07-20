@@ -148,6 +148,35 @@ PalletTown_ProfessorOaksLab_Text_ReceivedFusionStone::
     .string "{PLAYER} received the FUSION STONE\n"
     .string "from PROF. OAK!$"
 
+PalletTown_ProfessorOaksLab_Text_OakGivesBattleArtifacts::
+    .string "OAK: And these, too!\p"
+    .string "Colleagues in distant regions sent\n"
+    .string "me three wondrous battle artifacts.\p"
+    .string "The MEGA STONE, the Z CRYSTAL,\n"
+    .string "and the DYNA BAND!\p"
+    .string "Have a POKéMON hold one, then send\n"
+    .string "it into battle to witness power\l"
+    .string "beyond ordinary evolution!\p"
+    .string "MEGA STONE to Mega Evolve…\p"
+    .string "Z CRYSTAL for an unstoppable\n"
+    .string "Z-Move…\p"
+    .string "And the DYNA BAND to Dynamax\n"
+    .string "into a towering giant!\p"
+    .string "A fused POKéMON holding the BAND\n"
+    .string "will even Gigantamax!$"
+
+PalletTown_ProfessorOaksLab_Text_ReceivedMegaStone::
+    .string "{PLAYER} received the MEGA STONE\n"
+    .string "from PROF. OAK!$"
+
+PalletTown_ProfessorOaksLab_Text_ReceivedZCrystal::
+    .string "{PLAYER} received the Z CRYSTAL\n"
+    .string "from PROF. OAK!$"
+
+PalletTown_ProfessorOaksLab_Text_ReceivedDynaBand::
+    .string "{PLAYER} received the DYNA BAND\n"
+    .string "from PROF. OAK!$"
+
 PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon::
     .string "OAK: If a wild POKéMON appears,\n"
     .string "your POKéMON can battle it.\p"

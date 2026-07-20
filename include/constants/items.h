@@ -445,8 +445,11 @@
 #define ITEM_RUBY 373
 #define ITEM_SAPPHIRE 374
 #define ITEM_FUSION_STONE 375
+#define ITEM_MEGA_STONE 376
+#define ITEM_Z_CRYSTAL 377
+#define ITEM_DYNA_BAND 378
 
-#define ITEMS_COUNT 376
+#define ITEMS_COUNT 379
 
 #define ITEM_TO_BERRY(itemId)(((itemId - FIRST_BERRY_INDEX) + 1))
 #define MAIL_NONE 0xFF

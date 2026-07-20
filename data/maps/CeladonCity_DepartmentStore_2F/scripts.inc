@@ -35,6 +35,9 @@ CeladonCity_DepartmentStore_2F_Items::
 	.2byte ITEM_BURN_HEAL
 	.2byte ITEM_ICE_HEAL
 	.2byte ITEM_SUPER_REPEL
+	.2byte ITEM_MEGA_STONE
+	.2byte ITEM_Z_CRYSTAL
+	.2byte ITEM_DYNA_BAND
 	.2byte ITEM_NONE
 	release
 	end

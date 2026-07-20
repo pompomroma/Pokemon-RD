@@ -188,6 +188,9 @@ const u32 gItemIconPalette_SunStone[] = INCBIN_U32("graphics/items/icon_palettes
 const u32 gItemIcon_MoonStone[] = INCBIN_U32("graphics/items/icons/moon_stone.4bpp.lz");
 const u32 gItemIconPalette_MoonStone[] = INCBIN_U32("graphics/items/icon_palettes/moon_stone.gbapal.lz");
 const u32 gItemIconPalette_FusionStone[] = INCBIN_U32("graphics/items/icon_palettes/fusion_stone.gbapal.lz");
+const u32 gItemIconPalette_MegaStone[] = INCBIN_U32("graphics/items/icon_palettes/mega_stone.gbapal.lz");
+const u32 gItemIconPalette_ZCrystal[] = INCBIN_U32("graphics/items/icon_palettes/z_crystal.gbapal.lz");
+const u32 gItemIconPalette_DynaBand[] = INCBIN_U32("graphics/items/icon_palettes/dyna_band.gbapal.lz");
 
 const u32 gItemIcon_FireStone[] = INCBIN_U32("graphics/items/icons/fire_stone.4bpp.lz");
 const u32 gItemIconPalette_FireStone[] = INCBIN_U32("graphics/items/icon_palettes/fire_stone.gbapal.lz");
