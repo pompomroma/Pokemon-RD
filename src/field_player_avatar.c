@@ -508,8 +508,8 @@ static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
 
     if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
     {
-        // Same speed as running
-        PlayerWalkFast(direction);
+        // Surf keeps pace with the immensely faster on-foot speed.
+        PlayerWalkFaster(direction);
         return;
     }
 
@@ -519,16 +519,18 @@ static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
         if (PlayerIsMovingOnRockStairs(direction))
             PlayerRunSlow(direction);
         else
-            PlayerRun(direction);
+            PlayerWalkFaster(direction); // dash at bike speed
         gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_DASH;
         return;
     }
     else
     {
+        // Immensely increased walking speed: normal walking now moves at
+        // bicycle speed. Slow-stair syncing is left untouched.
         if (PlayerIsMovingOnRockStairs(direction))
             PlayerWalkSlow(direction);
         else
-            PlayerWalkNormal(direction);
+            PlayerWalkFaster(direction);
     }
 }
 
