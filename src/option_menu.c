@@ -9,7 +9,12 @@
 #include "text_window.h"
 #include "strings.h"
 #include "field_fadetransition.h"
+#include "game_language.h"
 #include "gba/m4a_internal.h"
+
+// Vertical distance between option rows. Tightened from the stock 13 so the
+// added LANGUAGE row keeps all 8 rows inside the options window.
+#define OPTION_ROW_PITCH 11
 
 // can't include the one in menu_helpers.h since Task_OptionMenu needs bool32 for matching
 bool32 IsActiveOverworldLinkBusy(void);
@@ -23,6 +28,7 @@ enum
     MENUITEM_SOUND,
     MENUITEM_BUTTONMODE,
     MENUITEM_FRAMETYPE,
+    MENUITEM_LANGUAGE,
     MENUITEM_CANCEL,
     MENUITEM_COUNT
 };
@@ -131,7 +137,14 @@ static const struct BgTemplate sOptionMenuBgTemplates[] =
 };
 
 static const u16 sOptionMenuPalette[] = INCBIN_U16("graphics/misc/option_menu.gbapal");
-static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 0};
+static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 2, 0};
+
+// Korean labels for the localized rows (real Hangul via baked font glyphs).
+// Defined in graphics/fonts/korean_glyphs so the strings resolve to the
+// extra-symbol escapes for their syllables.
+#include "korean_ui_strings.h"
+
+static const u8 sText_Language_En[] = _("LANGUAGE");
 
 static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
 {
@@ -141,8 +154,35 @@ static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
     [MENUITEM_SOUND]       = gText_Sound,
     [MENUITEM_BUTTONMODE]  = gText_ButtonMode,
     [MENUITEM_FRAMETYPE]   = gText_Frame,
+    [MENUITEM_LANGUAGE]    = sText_Language_En,
     [MENUITEM_CANCEL]      = gText_OptionMenuCancel,
 };
+
+// Korean row labels (baked Hangul). NULL rows fall back to English.
+static const u8 *const sOptionMenuItemsNamesKor[MENUITEM_COUNT] =
+{
+    [MENUITEM_TEXTSPEED]   = sKorText_TextSpeed,
+    [MENUITEM_BATTLESCENE] = sKorText_BattleScene,
+    [MENUITEM_BATTLESTYLE] = sKorText_BattleStyle,
+    [MENUITEM_SOUND]       = sKorText_Sound,
+    [MENUITEM_BUTTONMODE]  = sKorText_ButtonMode,
+    [MENUITEM_FRAMETYPE]   = sKorText_Frame,
+    [MENUITEM_LANGUAGE]    = sKorText_Language,
+    [MENUITEM_CANCEL]      = sKorText_Cancel,
+};
+
+static const u8 sText_LangEnglish[] = _("ENGLISH");
+static const u8 *const sLanguageOptions[] =
+{
+    sText_LangEnglish,
+    sKorText_Korean, // "한국어" in baked Hangul
+};
+
+// Localized value labels (each falls back to English via GetLangString).
+static const u8 *const sTextSpeedOptionsKor[] = { sKorText_Slow, sKorText_Mid, sKorText_Fast };
+static const u8 *const sBattleSceneOptionsKor[] = { sKorText_On, sKorText_Off };
+static const u8 *const sBattleStyleOptionsKor[] = { sKorText_Shift, sKorText_Set };
+static const u8 *const sSoundOptionsKor[] = { sKorText_Mono, sKorText_Stereo };
 
 static const u8 *const sTextSpeedOptions[] =
 {
@@ -212,7 +252,8 @@ void CB2_OptionsMenuFromStartMenu(void)
     sOptionMenuPtr->option[MENUITEM_SOUND] = gSaveBlock2Ptr->optionsSound;
     sOptionMenuPtr->option[MENUITEM_BUTTONMODE] = gSaveBlock2Ptr->optionsButtonMode;
     sOptionMenuPtr->option[MENUITEM_FRAMETYPE] = gSaveBlock2Ptr->optionsWindowFrameType;
-    
+    sOptionMenuPtr->option[MENUITEM_LANGUAGE] = gSaveBlock2Ptr->optionsLanguage;
+
     for (i = 0; i < MENUITEM_COUNT - 1; i++)
     {
         if (sOptionMenuPtr->option[i] > (sOptionMenuItemCounts[i]) - 1)
@@ -472,22 +513,22 @@ static void BufferOptionMenuString(u8 selection)
     
     memcpy(dst, sOptionMenuTextColor, 3);
     x = 0x82;
-    y = ((GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_HEIGHT) - 1) * selection) + 2;
+    y = (OPTION_ROW_PITCH * selection) + 2; // tightened pitch to fit 8 rows
     FillWindowPixelRect(1, 1, x, y, 0x46, GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_HEIGHT));
 
     switch (selection)
     {
     case MENUITEM_TEXTSPEED:
-        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sTextSpeedOptions[sOptionMenuPtr->option[selection]]);
+        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, GetLangString(sTextSpeedOptions[sOptionMenuPtr->option[selection]], sTextSpeedOptionsKor[sOptionMenuPtr->option[selection]]));
         break;
     case MENUITEM_BATTLESCENE:
-        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sBattleSceneOptions[sOptionMenuPtr->option[selection]]);
+        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, GetLangString(sBattleSceneOptions[sOptionMenuPtr->option[selection]], sBattleSceneOptionsKor[sOptionMenuPtr->option[selection]]));
         break;
     case MENUITEM_BATTLESTYLE:
-        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sBattleStyleOptions[sOptionMenuPtr->option[selection]]);
+        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, GetLangString(sBattleStyleOptions[sOptionMenuPtr->option[selection]], sBattleStyleOptionsKor[sOptionMenuPtr->option[selection]]));
         break;
     case MENUITEM_SOUND:
-        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sSoundOptions[sOptionMenuPtr->option[selection]]);
+        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, GetLangString(sSoundOptions[sOptionMenuPtr->option[selection]], sSoundOptionsKor[sOptionMenuPtr->option[selection]]));
         break;
     case MENUITEM_BUTTONMODE:
         AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sButtonTypeOptions[sOptionMenuPtr->option[selection]]);
@@ -497,6 +538,9 @@ static void BufferOptionMenuString(u8 selection)
         ConvertIntToDecimalStringN(buf, sOptionMenuPtr->option[selection] + 1, 1, 2);
         StringAppendN(str, buf, 3);
         AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, str);
+        break;
+    case MENUITEM_LANGUAGE:
+        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sLanguageOptions[sOptionMenuPtr->option[selection]]);
         break;
     default:
         break;
@@ -516,6 +560,7 @@ static void CloseAndSaveOptionMenu(u8 taskId)
     gSaveBlock2Ptr->optionsSound = sOptionMenuPtr->option[MENUITEM_SOUND];
     gSaveBlock2Ptr->optionsButtonMode = sOptionMenuPtr->option[MENUITEM_BUTTONMODE];
     gSaveBlock2Ptr->optionsWindowFrameType = sOptionMenuPtr->option[MENUITEM_FRAMETYPE];
+    gSaveBlock2Ptr->optionsLanguage = sOptionMenuPtr->option[MENUITEM_LANGUAGE];
     SetPokemonCryStereo(gSaveBlock2Ptr->optionsSound);
     FREE_AND_SET_NULL(sOptionMenuPtr);
     DestroyTask(taskId);
@@ -524,7 +569,7 @@ static void CloseAndSaveOptionMenu(u8 taskId)
 static void PrintOptionMenuHeader(void)
 {
     FillWindowPixelBuffer(0, PIXEL_FILL(1));
-    AddTextPrinterParameterized(WIN_TEXT_OPTION, FONT_NORMAL, gText_Option, 8, 1, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(WIN_TEXT_OPTION, FONT_NORMAL, GetLangString(gText_Option, sKorText_Option), 8, 1, TEXT_SKIP_DRAW, NULL);
     PutWindowTilemap(0);
     CopyWindowToVram(0, COPYWIN_FULL);
 }
@@ -560,7 +605,7 @@ static void LoadOptionMenuItemNames(void)
     FillWindowPixelBuffer(1, PIXEL_FILL(1));
     for (i = 0; i < MENUITEM_COUNT; i++)
     {
-        AddTextPrinterParameterized(WIN_OPTIONS, FONT_NORMAL, sOptionMenuItemsNames[i], 8, (u8)((i * (GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_HEIGHT))) + 2) - i, TEXT_SKIP_DRAW, NULL);    
+        AddTextPrinterParameterized(WIN_OPTIONS, FONT_NORMAL, GetLangString(sOptionMenuItemsNames[i], sOptionMenuItemsNamesKor[i]), 8, (u8)((i * OPTION_ROW_PITCH) + 2), TEXT_SKIP_DRAW, NULL);
     }
 }
 
@@ -569,7 +614,7 @@ static void UpdateSettingSelectionDisplay(u16 selection)
     u16 maxLetterHeight, y;
     
     maxLetterHeight = GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_HEIGHT);
-    y = selection * (maxLetterHeight - 1) + 0x3A;
+    y = selection * OPTION_ROW_PITCH + 0x3A;
     SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(y, y + maxLetterHeight));
     SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(0x10, 0xE0));
 }
