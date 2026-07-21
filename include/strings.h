@@ -624,6 +624,8 @@ extern const u8 gText_MailReturnedToBagMessageErased[];
 
 // start_menu
 extern const u8 gText_MenuPokedex[];
+extern const u8 gText_MenuBattleHub[];
+extern const u8 gText_MenuTradeHub[];
 extern const u8 gText_MenuBag[];
 extern const u8 gText_MenuPlayer[];
 extern const u8 gText_MenuSave[];
@@ -637,6 +639,8 @@ extern const u8 gStartMenuDesc_Bag[];
 extern const u8 gStartMenuDesc_Save[];
 extern const u8 gStartMenuDesc_Option[];
 extern const u8 gStartMenuDesc_Exit[];
+extern const u8 gStartMenuDesc_BattleHub[];
+extern const u8 gStartMenuDesc_TradeHub[];
 extern const u8 gStartMenuDesc_Retire[];
 extern const u8 gStartMenuDesc_Player[];
 extern const u8 gText_SaveError_PleaseExchangeBackupMemory[];

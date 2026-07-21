@@ -157,6 +157,8 @@ const u8 gText_YesNo[] = _("YES\nNO");
 const u8 gText_GoBackToThePreviousMenu[] = _("Go back to the\nprevious menu.");
 const u8 gText_WhatWouldYouLikeToDo[] = _("What would you like to do?");
 const u8 gText_MenuPokedex[] = _("POKéDEX");
+const u8 gText_MenuBattleHub[] = _("HUB");
+const u8 gText_MenuTradeHub[] = _("TRADE");
 const u8 gText_MenuBag[] = _("BAG");
 const u8 gText_MenuPokenav[] = _("ポケナビ");
 const u8 gText_MenuPlayer[] = _("{PLAYER}");
@@ -904,6 +906,8 @@ const u8 gStartMenuDesc_Save[] = _("Save your game with a complete record\nof yo
 const u8 gStartMenuDesc_Option[] = _("Adjust various game settings such as text\nspeed, game rules, etc.");
 const u8 gStartMenuDesc_Exit[] = _("Close this MENU window.");
 const u8 gStartMenuDesc_Retire[] = _("Retire from the SAFARI GAME and return to\nthe registration counter.");
+const u8 gStartMenuDesc_BattleHub[] = _("Enter the BATTLE HUB for single and\nteam battles, or link play.");
+const u8 gStartMenuDesc_TradeHub[] = _("Enter the TRADE HUB to trade POKéMON\nfrom your PARTY or BOXES.");
 
 #include "data/text/quest_log.h"
 

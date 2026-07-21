@@ -49,6 +49,8 @@ enum StartMenuOption
     STARTMENU_EXIT,
     STARTMENU_RETIRE,
     STARTMENU_PLAYER2,
+    STARTMENU_BATTLE_HUB,
+    STARTMENU_TRADE_HUB,
     MAX_STARTMENU_ITEMS
 };
 
@@ -88,6 +90,8 @@ static bool8 StartMenuOptionCallback(void);
 static bool8 StartMenuExitCallback(void);
 static bool8 StartMenuSafariZoneRetireCallback(void);
 static bool8 StartMenuLinkPlayerCallback(void);
+static bool8 StartMenuBattleHubCallback(void);
+static bool8 StartMenuTradeHubCallback(void);
 static bool8 StartCB_Save1(void);
 static bool8 StartCB_Save2(void);
 static void StartMenu_PrepareForSave(void);
@@ -122,7 +126,9 @@ static const struct MenuAction sStartMenuActionTable[] = {
     [STARTMENU_OPTION]  = { gText_MenuOption,  {.u8_void = StartMenuOptionCallback} },
     [STARTMENU_EXIT]    = { gText_MenuExit,    {.u8_void = StartMenuExitCallback} },
     [STARTMENU_RETIRE]  = { gText_MenuRetire,  {.u8_void = StartMenuSafariZoneRetireCallback} },
-    [STARTMENU_PLAYER2] = { gText_MenuPlayer,  {.u8_void = StartMenuLinkPlayerCallback} }
+    [STARTMENU_PLAYER2] = { gText_MenuPlayer,  {.u8_void = StartMenuLinkPlayerCallback} },
+    [STARTMENU_BATTLE_HUB] = { gText_MenuBattleHub, {.u8_void = StartMenuBattleHubCallback} },
+    [STARTMENU_TRADE_HUB]  = { gText_MenuTradeHub,  {.u8_void = StartMenuTradeHubCallback} }
 };
 
 static const struct WindowTemplate sSafariZoneStatsWindowTemplate = {
@@ -144,7 +150,9 @@ static const u8 *const sStartMenuDescPointers[] = {
     gStartMenuDesc_Option,
     gStartMenuDesc_Exit,
     gStartMenuDesc_Retire,
-    gStartMenuDesc_Player
+    gStartMenuDesc_Player,
+    gStartMenuDesc_BattleHub,
+    gStartMenuDesc_TradeHub
 };
 
 static const struct BgTemplate sBGTemplates_AfterLinkSaveMessage[] = {
@@ -218,6 +226,11 @@ static void SetUpStartMenu_NormalField(void)
         AppendToStartMenuItems(STARTMENU_POKEMON);
     AppendToStartMenuItems(STARTMENU_BAG);
     AppendToStartMenuItems(STARTMENU_PLAYER);
+    if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE)
+    {
+        AppendToStartMenuItems(STARTMENU_BATTLE_HUB);
+        AppendToStartMenuItems(STARTMENU_TRADE_HUB);
+    }
     AppendToStartMenuItems(STARTMENU_SAVE);
     AppendToStartMenuItems(STARTMENU_OPTION);
     AppendToStartMenuItems(STARTMENU_EXIT);
@@ -444,11 +457,34 @@ static bool8 StartCB_HandleInput(void)
     return FALSE;
 }
 
+// Runs a field script after the Start menu closes (see the field-move
+// script bridge in fldeff_cut.c). Used by the Battle/Trade Hub entries.
+static bool8 StartMenuRunFieldScript(const u8 *script)
+{
+    DestroySafariZoneStatsWindow();
+    DestroyHelpMessageWindow_();
+    CloseStartMenu();
+    ScriptContext_SetupScript(script);
+    return TRUE;
+}
+
+static bool8 StartMenuBattleHubCallback(void)
+{
+    return StartMenuRunFieldScript(BattleHub_EventScript_Enter);
+}
+
+static bool8 StartMenuTradeHubCallback(void)
+{
+    return StartMenuRunFieldScript(TradeHub_EventScript_Enter);
+}
+
 static void StartMenu_FadeScreenIfLeavingOverworld(void)
 {
     if (sStartMenuCallback != StartMenuSaveCallback
      && sStartMenuCallback != StartMenuExitCallback
-     && sStartMenuCallback != StartMenuSafariZoneRetireCallback)
+     && sStartMenuCallback != StartMenuSafariZoneRetireCallback
+     && sStartMenuCallback != StartMenuBattleHubCallback
+     && sStartMenuCallback != StartMenuTradeHubCallback)
     {
         StopPokemonLeagueLightingEffectTask();
         FadeScreen(FADE_TO_BLACK, 0);
