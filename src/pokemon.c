@@ -2098,7 +2098,7 @@ static u16 CalculateBoxMonChecksum(struct BoxPokemon *boxMon)
     s32 n;                                                      \
     u8 nature;                                                  \
     if (fusionPartner != SPECIES_NONE)                          \
-        baseStat = Fusion_GetBaseStat(species, fusionPartner, statIndex); \
+        baseStat = Fusion_ApplyStageToStat(Fusion_GetBaseStat(species, fusionPartner, statIndex), fusionStage); \
     n = (((2 * baseStat + iv + ev / 4) * level) / 100) + 5;     \
     nature = GetNature(mon);                                    \
     n = ModifyStatByNature(nature, n, statIndex);               \
@@ -2124,6 +2124,7 @@ void CalculateMonStats(struct Pokemon *mon)
     u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
     u16 fusionPartner = Fusion_GetPartnerSpecies(&mon->box);
     s32 level = GetLevelFromMonExp(mon);
+    u8 fusionStage = (fusionPartner != SPECIES_NONE) ? Fusion_GetLevelStage(level) : 0;
     s32 newMaxHP;
 
     SetMonData(mon, MON_DATA_LEVEL, &level);
@@ -2137,7 +2138,7 @@ void CalculateMonStats(struct Pokemon *mon)
         s32 baseHP = gSpeciesInfo[species].baseHP;
         s32 n;
         if (fusionPartner != SPECIES_NONE)
-            baseHP = Fusion_GetBaseStat(species, fusionPartner, STAT_HP);
+            baseHP = Fusion_ApplyStageToStat(Fusion_GetBaseStat(species, fusionPartner, STAT_HP), fusionStage);
         n = 2 * baseHP + hpIV;
         newMaxHP = (((n + hpEV / 4) * level) / 100) + level + 10;
     }

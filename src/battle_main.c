@@ -3900,6 +3900,15 @@ static void TryEvolvePokemon(void)
                 levelUpBits &= ~(gBitTable[i]);
                 gLeveledUpInBattle = levelUpBits;
 
+                // Fused Pokémon advance their fusion evolution stage instead
+                // of evolving their base species. The visible payoff is the
+                // stage-scaled send-in aura + stronger stats next battle.
+                if (Fusion_IsMonFused(&gPlayerParty[i].box))
+                {
+                    Fusion_TryStageUp(&gPlayerParty[i]);
+                    continue;
+                }
+
                 species = GetEvolutionTargetSpecies(&gPlayerParty[i], EVO_MODE_NORMAL, levelUpBits);
                 if (species != SPECIES_NONE)
                 {

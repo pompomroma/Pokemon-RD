@@ -5174,11 +5174,29 @@ static void Task_TryLearningNextMove(u8 taskId)
     }
 }
 
+static const u8 sText_FusionStageUp[] = _("{STR_VAR_1} evolved to its\nnext fusion stage!{PAUSE_UNTIL_PRESS}");
+
 static void PartyMenuTryEvolution(u8 taskId)
 {
     struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
-    u16 targetSpecies = GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL, ITEM_NONE);
+    u16 targetSpecies;
 
+    // Fused Pokémon advance their fusion stage rather than evolving species.
+    if (Fusion_IsMonFused(&mon->box))
+    {
+        if (Fusion_TryStageUp(mon))
+        {
+            GetMonNickname(mon, gStringVar1);
+            StringExpandPlaceholders(gStringVar4, sText_FusionStageUp);
+            PlayFanfare(MUS_EVOLVED);
+            DisplayPartyMenuMessage(gStringVar4, TRUE);
+            ScheduleBgCopyTilemapToVram(2);
+        }
+        gTasks[taskId].func = Task_ClosePartyMenuAfterText;
+        return;
+    }
+
+    targetSpecies = GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL, ITEM_NONE);
     if (targetSpecies != SPECIES_NONE)
     {
         FreePartyPointers();

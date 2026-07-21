@@ -6,6 +6,7 @@
 #include "decompress.h"
 #include "pokemon.h"
 #include "pokemon_fusion.h"
+#include "pokemon_storage_system.h"
 #include "constants/moves.h"
 #include "constants/pokemon.h"
 #include "constants/songs.h"
@@ -94,6 +95,70 @@ static struct FusionRecord *FindFreeRecord(void)
 bool8 Fusion_HasFreeRecord(void)
 {
     return FindFreeRecord() != NULL;
+}
+
+// --- Fusion evolution stages ---------------------------------------------
+// The effective stage used for stats/power is derived purely from level, so
+// it is always correct even before the stage-up is announced. The stored
+// stage (flags bits 1-2) tracks what has been announced, and drives the
+// per-stage palette intensification and the one-time stage-up notification.
+
+u8 Fusion_GetLevelStage(u8 level)
+{
+    if (level >= FUSION_STAGE2_LEVEL)
+        return 2;
+    if (level >= FUSION_STAGE1_LEVEL)
+        return 1;
+    return 0;
+}
+
+u8 Fusion_GetRecordStage(struct FusionRecord *rec)
+{
+    if (rec == NULL)
+        return 0;
+    return (rec->flags & FUSION_STAGE_MASK) >> FUSION_STAGE_SHIFT;
+}
+
+static void Fusion_SetRecordStage(struct FusionRecord *rec, u8 stage)
+{
+    if (stage > FUSION_MAX_STAGE)
+        stage = FUSION_MAX_STAGE;
+    rec->flags = (rec->flags & ~FUSION_STAGE_MASK) | (stage << FUSION_STAGE_SHIFT);
+}
+
+u8 Fusion_GetMonEffectiveStage(struct BoxPokemon *boxMon)
+{
+    if (!Fusion_IsMonFused(boxMon))
+        return 0;
+    return Fusion_GetLevelStage(GetLevelFromBoxMonExp(boxMon));
+}
+
+// stage 0 = x1.00, stage 1 = x1.15, stage 2 = x1.30, clamped to 255.
+u16 Fusion_ApplyStageToStat(u16 base, u8 stage)
+{
+    u32 result = (u32)base * (100 + 15 * stage) / 100;
+
+    if (result > 255)
+        result = 255;
+    return result;
+}
+
+// Bring the stored (announced) stage up to the level-derived stage. Returns
+// TRUE if it advanced (so callers can play a stage-up notification).
+bool8 Fusion_TryStageUp(struct Pokemon *mon)
+{
+    struct FusionRecord *rec = Fusion_FindRecordByMon(&mon->box);
+    u8 levelStage, storedStage;
+
+    if (rec == NULL)
+        return FALSE;
+    levelStage = Fusion_GetLevelStage(GetMonData(mon, MON_DATA_LEVEL, NULL));
+    storedStage = Fusion_GetRecordStage(rec);
+    if (levelStage <= storedStage)
+        return FALSE;
+    Fusion_SetRecordStage(rec, levelStage);
+    CalculateMonStats(mon);
+    return TRUE;
 }
 
 u16 Fusion_FuseBaseStatPair(u16 statA, u16 statB)
@@ -373,7 +438,9 @@ void Fusion_SetSignatureMoveDynamics(u8 battler)
         return;
     species = GetMonData(mon, MON_DATA_SPECIES, NULL);
     gBattleStruct->dynamicMoveType = Fusion_GetSignatureMoveType(species, rec->partnerSpecies) | 0x80;
-    gDynamicBasePower = Fusion_GetSignatureMovePower(species, rec->partnerSpecies);
+    // The signature move grows with the fusion's evolution stage.
+    gDynamicBasePower = Fusion_ApplyStageToStat(Fusion_GetSignatureMovePower(species, rec->partnerSpecies),
+                                                Fusion_GetMonEffectiveStage(&mon->box));
 }
 
 void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic)
@@ -404,7 +471,7 @@ void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic)
     Free(buffer);
 }
 
-static bool8 GetPartnerBlendPalette(u32 personality, u32 otId, u16 *partnerPal)
+static bool8 GetPartnerBlendPalette(u32 personality, u32 otId, u16 *partnerPal, u8 *stage)
 {
     struct FusionRecord *rec = Fusion_FindRecordByPersonality(personality);
 
@@ -413,14 +480,26 @@ static bool8 GetPartnerBlendPalette(u32 personality, u32 otId, u16 *partnerPal)
     if (rec->partnerSpecies == SPECIES_NONE || rec->partnerSpecies >= NUM_SPECIES)
         return FALSE;
     LZ77UnCompWram(GetMonSpritePalFromSpeciesAndPersonality(rec->partnerSpecies, otId, rec->partnerPersonality), partnerPal);
+    *stage = Fusion_GetRecordStage(rec);
     return TRUE;
 }
 
-static u16 BlendColorPair(u16 a, u16 b)
+// 50/50 blend of the two parent colors, then lifted toward a vivid glow by
+// the fusion's evolution stage so each stage looks more intense.
+static u16 BlendColorPair(u16 a, u16 b, u8 stage)
 {
-    return RGB((GET_R(a) + GET_R(b)) / 2,
-               (GET_G(a) + GET_G(b)) / 2,
-               (GET_B(a) + GET_B(b)) / 2);
+    s32 r = (GET_R(a) + GET_R(b)) / 2;
+    s32 g = (GET_G(a) + GET_G(b)) / 2;
+    s32 bl = (GET_B(a) + GET_B(b)) / 2;
+
+    // +~9% toward white per stage.
+    r += (31 - r) * 3 * stage / 32;
+    g += (31 - g) * 3 * stage / 32;
+    bl += (31 - bl) * 3 * stage / 32;
+    if (r > 31) r = 31;
+    if (g > 31) g = 31;
+    if (bl > 31) bl = 31;
+    return RGB(r, g, bl);
 }
 
 // Blend a just-decompressed 16-color mon palette in place (before it is
@@ -428,12 +507,13 @@ static u16 BlendColorPair(u16 a, u16 b)
 void Fusion_BlendMonPalBuffer(u32 personality, u32 otId, u16 *palBuffer)
 {
     u16 partnerPal[16];
+    u8 stage;
     s32 i;
 
-    if (!GetPartnerBlendPalette(personality, otId, partnerPal))
+    if (!GetPartnerBlendPalette(personality, otId, partnerPal, &stage))
         return;
     for (i = 0; i < 16; i++)
-        palBuffer[i] = BlendColorPair(palBuffer[i], partnerPal[i]);
+        palBuffer[i] = BlendColorPair(palBuffer[i], partnerPal[i], stage);
 }
 
 // Blend a mon palette that is already loaded into palette RAM at palOffset.
@@ -441,11 +521,12 @@ void Fusion_BlendMonSpritePalette(u32 personality, u32 otId, u32 palOffset)
 {
     u16 buffer[16];
     u16 partnerPal[16];
+    u8 stage;
     s32 i;
 
-    if (!GetPartnerBlendPalette(personality, otId, partnerPal))
+    if (!GetPartnerBlendPalette(personality, otId, partnerPal, &stage))
         return;
     for (i = 0; i < 16; i++)
-        buffer[i] = BlendColorPair(gPlttBufferUnfaded[palOffset + i], partnerPal[i]);
+        buffer[i] = BlendColorPair(gPlttBufferUnfaded[palOffset + i], partnerPal[i], stage);
     LoadPalette(buffer, palOffset, 32);
 }
