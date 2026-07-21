@@ -354,7 +354,9 @@ struct SaveBlock2
     /*0xAF0*/ struct BerryCrush berryCrush;
     /*0xB00*/ struct PokemonJumpRecords pokeJump;
     /*0xB10*/ struct BerryPickingResults berryPick;
-    /*0xB20*/ u8 filler_B20[0x400];
+    /*0xB20*/ u32 randomizerSeed;   // seed for the deterministic species remap
+    /*0xB24*/ u8 randomizerMode;    // 0 = normal, 1 = randomizer
+    /*0xB25*/ u8 filler_B20[0x3FB];
     /*0xF20*/ u32 encryptionKey;
 }; // size: 0xF24
 

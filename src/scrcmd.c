@@ -4,6 +4,7 @@
 #include "mystery_event_script.h"
 #include "event_data.h"
 #include "random.h"
+#include "randomizer.h"
 #include "item.h"
 #include "overworld.h"
 #include "field_screen_effect.h"
@@ -1740,6 +1741,10 @@ bool8 ScrCmd_givemon(struct ScriptContext * ctx)
     u32 unkParam2;
     u8 unkParam3;
     species = VarGet(ScriptReadHalfword(ctx));
+    // In Randomizer mode the starter is a mystery: remap the very first gift
+    // (empty party) through the same stable species map as everything else.
+    if (gSaveBlock1Ptr->playerPartyCount == 0)
+        species = GetRandomizedSpecies(species);
 #if REVISION >= 0xA
     // If the player party count is zero, this "must" be giving the starter.
     // Notify the emulator of what starter was picked, for telemetry purposes.

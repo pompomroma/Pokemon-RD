@@ -1,5 +1,6 @@
 #include "global.h"
 #include "random.h"
+#include "randomizer.h"
 #include "wild_encounter.h"
 #include "event_data.h"
 #include "fieldmap.h"
@@ -228,6 +229,7 @@ static void GenerateWildMon(u16 species, u8 level, u8 slot)
     u32 personality;
     s8 chamber;
     ZeroEnemyPartyMons();
+    species = GetRandomizedSpecies(species); // no-op unless randomizer is on
     if (species != SPECIES_UNOWN)
     {
         CreateMonWithNature(&gEnemyParty[0], species, level, USE_RANDOM_IVS, Random() % NUM_NATURES);

@@ -70,6 +70,9 @@ static void Task_OakSpeech_AskPlayerGender(u8);
 static void Task_OakSpeech_ShowGenderOptions(u8);
 static void Task_OakSpeech_HandleGenderInput(u8);
 static void Task_OakSpeech_ClearGenderWindows(u8);
+static void Task_OakSpeech_AskAdventureMode(u8);
+static void Task_OakSpeech_ShowModeOptions(u8);
+static void Task_OakSpeech_HandleModeInput(u8);
 static void Task_OakSpeech_LoadPlayerPic(u8);
 static void Task_OakSpeech_YourNameWhatIsIt(u8);
 static void Task_OakSpeech_FadeOutForPlayerNamingScreen(u8);
@@ -1321,8 +1324,70 @@ static void Task_OakSpeech_HandleGenderInput(u8 taskId)
     case MENU_NOTHING_CHOSEN:
         return;
     }
-    gTasks[taskId].func = Task_OakSpeech_ClearGenderWindows;
+    gTasks[taskId].func = Task_OakSpeech_AskAdventureMode;
 
+}
+
+// After picking a gender, the player chooses the adventure mode. In
+// Randomizer mode every species read (wild, trainer, starter) is remapped
+// through a stable seed set here. Reuses the gender option window slot.
+static const u8 sText_OakSpeech_AskAdventureMode[] = _("And how shall your\nadventure unfold?");
+static const u8 sText_OakSpeech_NormalMode[] = _("NORMAL");
+static const u8 sText_OakSpeech_RandomizerMode[] = _("RANDOM");
+
+static void Task_OakSpeech_AskAdventureMode(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    // Close the gender option window but keep the dialog frame.
+    ClearStdWindowAndFrameToTransparent(tMenuWindowId, TRUE);
+    RemoveWindow(tMenuWindowId);
+    OakSpeechPrintMessage(sText_OakSpeech_AskAdventureMode, sOakSpeechResources->textSpeed);
+    gTasks[taskId].func = Task_OakSpeech_ShowModeOptions;
+}
+
+static void Task_OakSpeech_ShowModeOptions(u8 taskId)
+{
+    if (!IsTextPrinterActive(WIN_INTRO_TEXTBOX))
+    {
+        gTasks[taskId].tMenuWindowId = AddWindow(&sIntro_WindowTemplates[WIN_INTRO_BOYGIRL]);
+        PutWindowTilemap(gTasks[taskId].tMenuWindowId);
+        DrawStdFrameWithCustomTileAndPalette(gTasks[taskId].tMenuWindowId, TRUE, GetStdWindowBaseTileNum(), 14);
+        FillWindowPixelBuffer(gTasks[taskId].tMenuWindowId, PIXEL_FILL(1));
+        sOakSpeechResources->textColor[0] = 1;
+        sOakSpeechResources->textColor[1] = 2;
+        sOakSpeechResources->textColor[2] = 3;
+        AddTextPrinterParameterized3(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 8, 1, sOakSpeechResources->textColor, 0, sText_OakSpeech_NormalMode);
+        sOakSpeechResources->textColor[0] = 1;
+        sOakSpeechResources->textColor[1] = 2;
+        sOakSpeechResources->textColor[2] = 3;
+        AddTextPrinterParameterized3(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 8, 17, sOakSpeechResources->textColor, 0, sText_OakSpeech_RandomizerMode);
+        Menu_InitCursor(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 0, 1, GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_HEIGHT) + 2, 2, 0);
+        CopyWindowToVram(gTasks[taskId].tMenuWindowId, COPYWIN_FULL);
+        gTasks[taskId].func = Task_OakSpeech_HandleModeInput;
+    }
+}
+
+static void Task_OakSpeech_HandleModeInput(u8 taskId)
+{
+    s8 input = Menu_ProcessInputNoWrapAround();
+
+    switch (input)
+    {
+    case 0: // NORMAL
+        gSaveBlock2Ptr->randomizerMode = 0;
+        break;
+    case 1: // RANDOMIZER
+        gSaveBlock2Ptr->randomizerMode = 1;
+        gSaveBlock2Ptr->randomizerSeed = Random32();
+        if (gSaveBlock2Ptr->randomizerSeed == 0)
+            gSaveBlock2Ptr->randomizerSeed = 0x1A2B3C4D;
+        break;
+    case MENU_B_PRESSED:
+    case MENU_NOTHING_CHOSEN:
+        return;
+    }
+    gTasks[taskId].func = Task_OakSpeech_ClearGenderWindows;
 }
 
 static void Task_OakSpeech_ClearGenderWindows(u8 taskId)
