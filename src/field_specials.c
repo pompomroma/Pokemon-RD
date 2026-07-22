@@ -8,6 +8,7 @@
 #include "overworld.h"
 #include "field_message_box.h"
 #include "event_data.h"
+#include "randomizer.h"
 #include "strings.h"
 #include "battle.h"
 #include "fieldmap.h"
@@ -92,6 +93,16 @@ void ShowDiploma(void)
     QuestLog_CutRecording();
     SetMainCallback2(CB2_ShowDiploma);
     LockPlayerFieldControls();
+}
+
+// Publish the species the player will ACTUALLY receive for their starter into
+// VAR_TEMP_5, so the lab's showmonpic/cry/name all match the gift. VAR_TEMP_2
+// holds the raw chosen ball species; GetRandomizedSpecies returns it unchanged
+// in normal mode and the same deterministic remap givemon uses in randomizer
+// mode, so the shown Pokemon is exactly the one given.
+void BufferRandomizedStarterSpecies(void)
+{
+    VarSet(VAR_TEMP_5, GetRandomizedSpecies(VarGet(VAR_TEMP_2)));
 }
 
 void ForcePlayerOntoBike(void)
