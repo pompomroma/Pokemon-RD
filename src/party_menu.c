@@ -40,6 +40,7 @@
 #include "pokedex.h"
 #include "pokemon.h"
 #include "pokemon_fusion.h"
+#include "stat_custom.h"
 #include "pokemon_icon.h"
 #include "pokemon_jump.h"
 #include "pokemon_special_anim.h"
@@ -165,6 +166,10 @@ static void CursorCB_Store(u8 taskId);
 static void CursorCB_Register(u8 taskId);
 static void CursorCB_Trade1(u8 taskId);
 static void CursorCB_Trade2(u8 taskId);
+static void CursorCB_Arrange(u8 taskId);
+static void Task_StatArrangeInput(u8 taskId);
+static void StatArrange_Draw(u8 taskId);
+static void StatArrange_Exit(u8 taskId);
 static void CursorCB_FieldMove(u8 taskId);
 static bool8 SetUpFieldMove_Fly(void);
 static bool8 SetUpFieldMove_Waterfall(void);
@@ -419,6 +424,8 @@ static EWRAM_DATA u16 sPartyMenuItemId = ITEM_NONE;
 ALIGNED(4) EWRAM_DATA u8 gBattlePartyCurrentOrder[PARTY_SIZE / 2] = {0}; // bits 0-3 are the current pos of Slot 1, 4-7 are Slot 2, and so on
 
 COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;
+
+static const u8 sText_MenuArrange[] = _("ARRANGE");
 
 #include "data/pokemon/tutor_learnsets.h"
 #include "data/party_menu.h"
@@ -2977,6 +2984,7 @@ static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
 
     sPartyMenuInternal->numActions = 0;
     AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, CURSOR_OPTION_SUMMARY);
+    AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, CURSOR_OPTION_ARRANGE);
     // Add field moves to action list
     for (i = 0; i < MAX_MON_MOVES; ++i)
     {
@@ -3410,6 +3418,237 @@ static void CursorCB_Cancel1(u8 taskId)
         DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);
     gTasks[taskId].func = Task_HandleChooseMonInput;
 }
+
+// ---- Stat Arrange editor (Round 4) ---------------------------------------
+// Point-buy over the six base stats (sum stays == the mon's base-stat total),
+// plus a talent that boosts one stat and weakens another. Runs as an overlay
+// window inside the party menu, so it reuses the party menu's graphics.
+#define tArr(i)     data[(i)]   // working stat values, i = 0..5
+#define tArrRemain  data[6]
+#define tArrCursor  data[7]
+#define tArrTalUp   data[8]
+#define tArrTalDown data[9]
+#define tArrWindow  data[10]
+#define tArrPool    data[11]
+
+static const u8 sText_ArrangeHeader[] = _("ARRANGE");
+static const u8 sText_ArrangePoints[] = _("PTS ");
+static const u8 sArrName_HP[]  = _("HP");
+static const u8 sArrName_Atk[] = _("ATTACK");
+static const u8 sArrName_Def[] = _("DEFENSE");
+static const u8 sArrName_Spe[] = _("SPEED");
+static const u8 sArrName_SpA[] = _("SP.ATK");
+static const u8 sArrName_SpD[] = _("SP.DEF");
+static const u8 *const sArrStatNames[6] = { sArrName_HP, sArrName_Atk, sArrName_Def, sArrName_Spe, sArrName_SpA, sArrName_SpD };
+static const u8 sText_ArrCursor[] = _(">");
+static const u8 sText_ArrSpace[] = _(" ");
+static const u8 sText_ArrPlus[] = _("+");
+static const u8 sText_ArrMinus[] = _("-");
+
+static void StatArrange_Draw(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+    u8 win = tArrWindow;
+    u8 i;
+    u8 buf[16];
+    u8 line[20];
+
+    FillWindowPixelBuffer(win, PIXEL_FILL(1));
+    AddTextPrinterParameterized4(win, FONT_NORMAL, 4, 0, 0, 0, sFontColorTable[3], 0, sText_ArrangeHeader);
+    for (i = 0; i < 6; i++)
+    {
+        u8 y = 16 + i * 14;
+        StringCopy(line, (i == tArrCursor) ? sText_ArrCursor : sText_ArrSpace);
+        StringAppend(line, sArrStatNames[i]);
+        AddTextPrinterParameterized4(win, FONT_NORMAL, 2, y, 0, 0, sFontColorTable[3], 0, line);
+        ConvertIntToDecimalStringN(buf, tArr(i), STR_CONV_MODE_RIGHT_ALIGN, 3);
+        if (tArrTalUp == i)
+            StringAppend(buf, sText_ArrPlus);
+        else if (tArrTalDown == i)
+            StringAppend(buf, sText_ArrMinus);
+        AddTextPrinterParameterized4(win, FONT_NORMAL, 74, y, 0, 0, sFontColorTable[3], 0, buf);
+    }
+    StringCopy(line, sText_ArrangePoints);
+    ConvertIntToDecimalStringN(buf, tArrRemain, STR_CONV_MODE_LEFT_ALIGN, 3);
+    StringAppend(line, buf);
+    AddTextPrinterParameterized4(win, FONT_NORMAL, 2, 16 + 6 * 14, 0, 0, sFontColorTable[3], 0, line);
+    PutWindowTilemap(win);
+    CopyWindowToVram(win, COPYWIN_GFX);
+    ScheduleBgCopyTilemapToVram(2);
+}
+
+static void CursorCB_Arrange(u8 taskId)
+{
+    struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
+    s16 *data = gTasks[taskId].data;
+    struct WindowTemplate window;
+    bool8 hasAlloc = StatCustom_MonHasAllocation(mon);
+    u8 talent = StatCustom_GetTalent(mon);
+    s16 sum = 0;
+    u8 i;
+
+    PlaySE(SE_SELECT);
+    PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[0]);
+    PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[1]);
+
+    tArrPool = StatCustom_GetBaseTotal(mon);
+    for (i = 0; i < 6; i++)
+    {
+        tArr(i) = hasAlloc ? StatCustom_GetAllocBase(mon, i) : StatCustom_GetEffectiveBase(mon, i);
+        if (tArr(i) < 1)
+            tArr(i) = 1;
+        sum += tArr(i);
+    }
+    tArrRemain = tArrPool - sum;
+    if (talent == STAT_CUSTOM_TALENT_NONE)
+    {
+        tArrTalUp = -1;
+        tArrTalDown = -1;
+    }
+    else
+    {
+        tArrTalUp = STAT_CUSTOM_TALENT_UP(talent);
+        tArrTalDown = STAT_CUSTOM_TALENT_DOWN(talent);
+    }
+    tArrCursor = 0;
+
+    window = SetWindowTemplateFields(2, 15, 1, 14, 17, 14, 0x2BF);
+    tArrWindow = AddWindow(&window);
+    DrawStdFrameWithCustomTileAndPalette(tArrWindow, FALSE, 0x4F, 13);
+    StatArrange_Draw(taskId);
+    gTasks[taskId].func = Task_StatArrangeInput;
+}
+
+static void StatArrange_Exit(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    ClearStdWindowAndFrameToTransparent(tArrWindow, FALSE);
+    ClearWindowTilemap(tArrWindow);
+    RemoveWindow(tArrWindow);
+    ScheduleBgCopyTilemapToVram(2);
+    DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);
+    gTasks[taskId].func = Task_HandleChooseMonInput;
+}
+
+static void Task_StatArrangeInput(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+    bool8 changed = FALSE;
+
+    if (JOY_NEW(DPAD_UP))
+    {
+        tArrCursor = (tArrCursor + 5) % 6;
+        changed = TRUE;
+        PlaySE(SE_SELECT);
+    }
+    else if (JOY_NEW(DPAD_DOWN))
+    {
+        tArrCursor = (tArrCursor + 1) % 6;
+        changed = TRUE;
+        PlaySE(SE_SELECT);
+    }
+    else if (JOY_NEW(DPAD_LEFT))
+    {
+        if (tArr(tArrCursor) > 1)
+        {
+            tArr(tArrCursor)--;
+            tArrRemain++;
+            changed = TRUE;
+            PlaySE(SE_SELECT);
+        }
+        else
+        {
+            PlaySE(SE_FAILURE);
+        }
+    }
+    else if (JOY_NEW(DPAD_RIGHT))
+    {
+        if (tArrRemain > 0 && tArr(tArrCursor) < 255)
+        {
+            tArr(tArrCursor)++;
+            tArrRemain--;
+            changed = TRUE;
+            PlaySE(SE_SELECT);
+        }
+        else
+        {
+            PlaySE(SE_FAILURE);
+        }
+    }
+    else if (JOY_NEW(L_BUTTON))
+    {
+        if (tArrTalUp == tArrCursor)
+        {
+            tArrTalUp = -1;
+        }
+        else
+        {
+            tArrTalUp = tArrCursor;
+            if (tArrTalDown == tArrCursor)
+                tArrTalDown = -1;
+        }
+        changed = TRUE;
+        PlaySE(SE_SELECT);
+    }
+    else if (JOY_NEW(R_BUTTON))
+    {
+        if (tArrTalDown == tArrCursor)
+        {
+            tArrTalDown = -1;
+        }
+        else
+        {
+            tArrTalDown = tArrCursor;
+            if (tArrTalUp == tArrCursor)
+                tArrTalUp = -1;
+        }
+        changed = TRUE;
+        PlaySE(SE_SELECT);
+    }
+    else if (JOY_NEW(A_BUTTON) || JOY_NEW(START_BUTTON))
+    {
+        if (tArrRemain == 0)
+        {
+            struct Pokemon *mon = &gPlayerParty[gPartyMenu.slotId];
+            u8 alloc[6];
+            u8 talent;
+            u8 i;
+
+            for (i = 0; i < 6; i++)
+                alloc[i] = tArr(i);
+            if (tArrTalUp >= 0 && tArrTalDown >= 0 && tArrTalUp != tArrTalDown)
+                talent = STAT_CUSTOM_MAKE_TALENT(tArrTalUp, tArrTalDown);
+            else
+                talent = STAT_CUSTOM_TALENT_NONE;
+            StatCustom_Save(mon, alloc, talent);
+            PlaySE(SE_USE_ITEM);
+            StatArrange_Exit(taskId);
+        }
+        else
+        {
+            PlaySE(SE_FAILURE);
+        }
+        return;
+    }
+    else if (JOY_NEW(B_BUTTON))
+    {
+        PlaySE(SE_SELECT);
+        StatArrange_Exit(taskId);
+        return;
+    }
+
+    if (changed)
+        StatArrange_Draw(taskId);
+}
+
+#undef tArr
+#undef tArrRemain
+#undef tArrCursor
+#undef tArrTalUp
+#undef tArrTalDown
+#undef tArrWindow
+#undef tArrPool
 
 static void CursorCB_Item(u8 taskId)
 {
