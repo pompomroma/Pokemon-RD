@@ -1304,6 +1304,8 @@ static void IntroCB_Scene1(struct IntroSequenceData * this)
         SetVBlankCallback(NULL);
         LoadPalette(sScene1_Grass_Pal, BG_PLTT_ID(PALSLOT_SCENE1_GRASS), sizeof(sScene1_Grass_Pal));
         LoadPalette(sScene1_Bg_Pal, BG_PLTT_ID(PALSLOT_SCENE1_BG), sizeof(sScene1_Bg_Pal));
+        GradeLoadedPalette(BG_PLTT_ID(PALSLOT_SCENE1_GRASS), sizeof(sScene1_Grass_Pal) / 2);
+        GradeLoadedPalette(BG_PLTT_ID(PALSLOT_SCENE1_BG), sizeof(sScene1_Bg_Pal) / 2);
         BlendPalettes((1 << PALSLOT_SCENE1_GRASS) | (1 << PALSLOT_SCENE1_BG), 16, RGB_WHITE);
         InitBgsFromTemplates(0, sBgTemplates_Scene1, ARRAY_COUNT(sBgTemplates_Scene1));
         DecompressAndCopyTileDataToVram(BG_SCENE1_BACKGROUND, sScene1_Bg_Gfx, 0, 0, 0);
@@ -1449,6 +1451,7 @@ static void IntroCB_Scene2(struct IntroSequenceData * this)
         {
             SetVBlankCallback(NULL);
             LoadPalette(sScene2_Bg_Pal, BG_PLTT_ID(1), sizeof(sScene2_Bg_Pal));
+            GradeLoadedPalette(BG_PLTT_ID(1), sizeof(sScene2_Bg_Pal) / 2);
             LoadPalette(sGengar_Pal, BG_PLTT_ID(5), sizeof(sGengar_Pal));
             LoadPalette(sScene2_NidorinoClose_Pal, BG_PLTT_ID(6), sizeof(sScene2_NidorinoClose_Pal));
             BlendPalettes(PALETTES_ALL & ~1, 16, RGB_WHITE);
@@ -1563,6 +1566,7 @@ static void IntroCB_Scene3_Entrance(struct IntroSequenceData * this)
     {
     case 0:
         LoadPalette(sScene3_Bg_Pal, BG_PLTT_ID(1), sizeof(sScene3_Bg_Pal));
+        GradeLoadedPalette(BG_PLTT_ID(1), sizeof(sScene3_Bg_Pal) / 2);
         LoadPalette(sGengar_Pal, BG_PLTT_ID(5), sizeof(sGengar_Pal));
         BlendPalettes(PALETTES_ALL & ~1, 16, RGB_WHITE);
         InitBgsFromTemplates(0, sBgTemplates_Scene3, ARRAY_COUNT(sBgTemplates_Scene3));

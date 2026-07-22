@@ -758,6 +758,7 @@ static void Task_NewGameScene(u8 taskId)
         InitTextBoxGfxAndPrinters();
         Menu_LoadStdPalAt(BG_PLTT_ID(13));
         LoadPalette(sOakSpeech_Background_Pals, BG_PLTT_ID(0), sizeof(sOakSpeech_Background_Pals));
+        GradeLoadedPalette(BG_PLTT_ID(0), sizeof(sOakSpeech_Background_Pals) / 2);
         LoadPalette(GetTextWindowPalette(2) + 15, BG_PLTT_ID(0), PLTT_SIZEOF(1));
         break;
     case 5:

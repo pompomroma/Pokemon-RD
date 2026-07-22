@@ -930,6 +930,15 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
     }
 }
 
+// Grade already-loaded palette entries in place (both buffers) so the opening
+// scenes read with the same cinematic look as the overworld and battles. Mirrors
+// the GradeFieldPalette idiom used at map-load time.
+void GradeLoadedPalette(u16 offset, u16 count)
+{
+    GradePalette_Cinematic(&gPlttBufferUnfaded[offset], count);
+    CpuCopy16(&gPlttBufferUnfaded[offset], &gPlttBufferFaded[offset], PLTT_SIZEOF(count));
+}
+
 // A far gentler grade for battle mon/trainer sprites: the foreground battlers
 // must stay instantly readable, so this only enriches color and adds a soft rim
 // highlight so they "pop" against the more heavily graded, soft-focus background

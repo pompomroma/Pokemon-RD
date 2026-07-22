@@ -82,6 +82,10 @@ void TintPalette_SepiaTone(u16 *palette, u16 count);
 void TintPalette_CustomTone(u16 *palette, u16 count, u16 rTone, u16 gTone, u16 bTone);
 void GradePalette_Cinematic(u16 *palette, u16 count);
 void GradePalette_BattleSprite(u16 *palette, u16 count);
+// Apply the cinematic grade to `count` already-loaded palette entries starting
+// at `offset`, updating both the unfaded and faded buffers so it composes under
+// the scene's fades. Use right after a LoadPalette, before the fade-in.
+void GradeLoadedPalette(u16 offset, u16 count);
 void PaletteStruct_ResetById(u16 id);
 void CopyPaletteInvertedTint(const u16 *src, u16 *dst, u16 count, u8 tone);
 void BlendPalettesGradually(u32 selectedPalettes, s8 delay, u8 coeff, u8 coeffTarget, u16 color, u8 priority, u8 id);
