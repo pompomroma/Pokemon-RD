@@ -5107,9 +5107,27 @@ u8 ObjectEventGetHeldMovementActionId(struct ObjectEvent *objectEvent)
     return MOVEMENT_ACTION_NONE;
 }
 
+// Round 5 depth polish: give every object event a soft drop shadow, reusing the
+// engine's own shadow field effect. Idempotent (only starts when the object has
+// no live shadow) and terrain-gated so we never churn the shadow sprite on tiles
+// where UpdateShadowFieldEffect would immediately remove it (tall grass, water,
+// reflective surfaces). The updater clears hasShadow when it self-terminates on
+// those tiles, so the shadow reappears once the object steps back onto solid ground.
+static void TryStartUniversalShadow(struct ObjectEvent *objectEvent)
+{
+    if (objectEvent->hasShadow || objectEvent->invisible)
+        return;
+    if (MetatileBehavior_IsPokeGrass(objectEvent->currentMetatileBehavior)
+     || MetatileBehavior_IsSurfable(objectEvent->currentMetatileBehavior)
+     || MetatileBehavior_IsReflective(objectEvent->currentMetatileBehavior))
+        return;
+    DoShadowFieldEffect(objectEvent);
+}
+
 void UpdateObjectEventCurrentMovement(struct ObjectEvent *objectEvent, struct Sprite *sprite, bool8 (*callback)(struct ObjectEvent *, struct Sprite *))
 {
     DoGroundEffects_OnSpawn(objectEvent, sprite);
+    TryStartUniversalShadow(objectEvent);
     TryEnableObjectEventAnim(objectEvent, sprite);
 
     if (ObjectEventIsHeldMovementActive(objectEvent))

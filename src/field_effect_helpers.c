@@ -254,6 +254,9 @@ void UpdateShadowFieldEffect(struct Sprite *sprite)
          || MetatileBehavior_IsReflective(objectEvent->currentMetatileBehavior)
          || MetatileBehavior_IsReflective(objectEvent->previousMetatileBehavior))
         {
+            // Mark the object as shadowless so the universal-shadow updater can
+            // recreate the shadow once it steps back onto solid ground.
+            objectEvent->hasShadow = FALSE;
             FieldEffectStop(sprite, FLDEFF_SHADOW);
         }
     }
