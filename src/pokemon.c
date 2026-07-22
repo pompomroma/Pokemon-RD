@@ -23,6 +23,7 @@
 #include "overworld.h"
 #include "party_menu.h"
 #include "pokemon_fusion.h"
+#include "stat_custom.h"
 #include "battle_gimmicks.h"
 #include "field_specials.h"
 #include "berry.h"
@@ -2097,11 +2098,14 @@ static u16 CalculateBoxMonChecksum(struct BoxPokemon *boxMon)
     u8 baseStat = gSpeciesInfo[species].base;                   \
     s32 n;                                                      \
     u8 nature;                                                  \
-    if (fusionPartner != SPECIES_NONE)                          \
+    if (statCustomAlloc)                                        \
+        baseStat = StatCustom_GetAllocBase(mon, statIndex);     \
+    else if (fusionPartner != SPECIES_NONE)                     \
         baseStat = Fusion_ApplyStageToStat(Fusion_GetBaseStat(species, fusionPartner, statIndex), fusionStage); \
     n = (((2 * baseStat + iv + ev / 4) * level) / 100) + 5;     \
     nature = GetNature(mon);                                    \
     n = ModifyStatByNature(nature, n, statIndex);               \
+    n = StatCustom_ApplyTalent(mon, n, statIndex);              \
     SetMonData(mon, field, &n);                                 \
 }
 
@@ -2125,6 +2129,7 @@ void CalculateMonStats(struct Pokemon *mon)
     u16 fusionPartner = Fusion_GetPartnerSpecies(&mon->box);
     s32 level = GetLevelFromMonExp(mon);
     u8 fusionStage = (fusionPartner != SPECIES_NONE) ? Fusion_GetLevelStage(level) : 0;
+    bool8 statCustomAlloc = StatCustom_MonHasAllocation(mon);
     s32 newMaxHP;
 
     SetMonData(mon, MON_DATA_LEVEL, &level);
@@ -2137,10 +2142,13 @@ void CalculateMonStats(struct Pokemon *mon)
     {
         s32 baseHP = gSpeciesInfo[species].baseHP;
         s32 n;
-        if (fusionPartner != SPECIES_NONE)
+        if (statCustomAlloc)
+            baseHP = StatCustom_GetAllocBase(mon, STAT_HP);
+        else if (fusionPartner != SPECIES_NONE)
             baseHP = Fusion_ApplyStageToStat(Fusion_GetBaseStat(species, fusionPartner, STAT_HP), fusionStage);
         n = 2 * baseHP + hpIV;
         newMaxHP = (((n + hpEV / 4) * level) / 100) + level + 10;
+        newMaxHP = StatCustom_ApplyTalent(mon, newMaxHP, STAT_HP);
     }
 
     gBattleScripting.levelUpHP = newMaxHP - oldMaxHP;

@@ -324,6 +324,24 @@ struct BattleTowerData // Leftover from R/S
     /*0x04D1, 0x0581*/ u8 filler_4D1[0x317];
 }; /* size = 0x7E8 */
 
+// Per-mon custom stat data (Round 4), keyed by personality + otId like
+// FusionRecord: a free re-allocation of the six base stats (still summing to
+// the mon's base-stat total) and a "talent" that boosts one stat and weakens
+// another. allocStats all-zero = no custom allocation; talent 0xFF = none,
+// else (upStat << 4) | downStat.
+#define STAT_CUSTOM_RECORDS_COUNT 48
+#define STAT_CUSTOM_FLAG_ACTIVE   (1 << 0)
+#define STAT_CUSTOM_TALENT_NONE   0xFF
+
+struct StatCustomRecord
+{
+    u32 personality;
+    u32 otId;
+    u8 allocStats[6];  // redistributed base stats (STAT_HP..STAT_SPDEF order)
+    u8 talent;         // (upStat << 4) | downStat, or STAT_CUSTOM_TALENT_NONE
+    u8 flags;          // STAT_CUSTOM_FLAG_ACTIVE
+};
+
 struct SaveBlock2
 {
     /*0x000*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
@@ -357,7 +375,9 @@ struct SaveBlock2
     /*0xB10*/ struct BerryPickingResults berryPick;
     /*0xB20*/ u32 randomizerSeed;   // seed for the deterministic species remap
     /*0xB24*/ u8 randomizerMode;    // 0 = normal, 1 = randomizer
-    /*0xB25*/ u8 filler_B20[0x3FB];
+    /*0xB25*/ u8 filler_B25[0x3];
+    /*0xB28*/ struct StatCustomRecord statCustom[STAT_CUSTOM_RECORDS_COUNT]; // 48 * 16 = 0x300
+    /*0xE28*/ u8 filler_B20[0xF8];
     /*0xF20*/ u32 encryptionKey;
 }; // size: 0xF24
 
