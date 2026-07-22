@@ -1664,6 +1664,16 @@ void VBlankCB_Battle(void)
     SetGpuReg(REG_OFFSET_WIN0V, gBattle_WIN0V);
     SetGpuReg(REG_OFFSET_WIN1H, gBattle_WIN1H);
     SetGpuReg(REG_OFFSET_WIN1V, gBattle_WIN1V);
+    // Round 5 battle depth-of-field: keep a subtle mosaic on the far background
+    // layer (BG3, priority 3) so distant scenery reads as soft-focus behind the
+    // battlers, echoing an HD-2D-style depth blur within GBA limits. Skipped
+    // while a move animation owns the mosaic register (it drives BG1/BG2 mosaic
+    // for its own effect) and re-applied automatically once it ends (self-healing).
+    if (!gAnimScriptActive)
+    {
+        SetGpuRegBits(REG_OFFSET_BG3CNT, BGCNT_MOSAIC);
+        SetGpuReg(REG_OFFSET_MOSAIC, (1 << 4) | 1); // BG mosaic 2x2 px; OBJ mosaic untouched
+    }
     LoadOam();
     ProcessSpriteCopyRequests();
     TransferPlttBuffer();
