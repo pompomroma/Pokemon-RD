@@ -930,6 +930,41 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
     }
 }
 
+// A far gentler grade for battle mon/trainer sprites: the foreground battlers
+// must stay instantly readable, so this only enriches color and adds a soft rim
+// highlight so they "pop" against the more heavily graded, soft-focus background
+// (an HD-2D-style lit-foreground look). No bloom, no hue shift, tiny contrast.
+void GradePalette_BattleSprite(u16 *palette, u16 count)
+{
+    s32 i;
+
+    for (i = 0; i < count; i++)
+    {
+        s32 r = GET_R(palette[i]);
+        s32 g = GET_G(palette[i]);
+        s32 b = GET_B(palette[i]);
+        s32 luma = (r * 77 + g * 151 + b * 28) >> 8;
+
+        // Light contrast ~x1.10 about the midpoint.
+        r = 16 + ((r - 16) * 141 >> 7);
+        g = 16 + ((g - 16) * 141 >> 7);
+        b = 16 + ((b - 16) * 141 >> 7);
+        // Richer color ~x1.18: push each channel away from the luma.
+        r = luma + ((r - luma) * 151 >> 7);
+        g = luma + ((g - luma) * 151 >> 7);
+        b = luma + ((b - luma) * 151 >> 7);
+        // Soft rim highlight: lift only the brightest tones a touch toward white
+        // so lit edges catch the "light" without washing out the mon's colors.
+        if (luma > 24)
+        {
+            r += (31 - r) >> 3;
+            g += (31 - g) >> 3;
+            b += (31 - b) >> 3;
+        }
+        palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
+    }
+}
+
 void CopyPaletteInvertedTint(const u16 *src, u16 *dst, u16 count, u8 tone)
 {
     s32 r, g, b, i;

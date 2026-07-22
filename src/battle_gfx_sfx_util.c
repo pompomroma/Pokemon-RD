@@ -351,6 +351,9 @@ void BattleLoadOpponentMonSpriteGfx(struct Pokemon *mon, u8 battlerId)
     LZDecompressWram(lzPaletteData, buffer);
     if (gBattleSpritesDataPtr->battlerData[battlerId].transformSpecies == SPECIES_NONE)
         Fusion_BlendMonPalBuffer(monsPersonality, otId, buffer);
+    // Round 5 HD-2D battle polish: gently enrich the foreground battler's colors
+    // and add a soft rim highlight so it pops against the soft-focus background.
+    GradePalette_BattleSprite(buffer, 16);
     LoadPalette(buffer, paletteOffset, PLTT_SIZE_4BPP);
     LoadPalette(buffer, BG_PLTT_ID(8) + BG_PLTT_ID(battlerId), PLTT_SIZE_4BPP);
     Free(buffer);
@@ -407,6 +410,9 @@ void BattleLoadPlayerMonSpriteGfx(struct Pokemon *mon, u8 battlerId)
     LZDecompressWram(lzPaletteData, buffer);
     if (gBattleSpritesDataPtr->battlerData[battlerId].transformSpecies == SPECIES_NONE)
         Fusion_BlendMonPalBuffer(monsPersonality, otId, buffer);
+    // Round 5 HD-2D battle polish: gently enrich the foreground battler's colors
+    // and add a soft rim highlight so it pops against the soft-focus background.
+    GradePalette_BattleSprite(buffer, 16);
     LoadPalette(buffer, paletteOffset, PLTT_SIZE_4BPP);
     LoadPalette(buffer, BG_PLTT_ID(8) + BG_PLTT_ID(battlerId), PLTT_SIZE_4BPP);
     Free(buffer);
