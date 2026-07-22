@@ -898,18 +898,34 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
         // Per-color luma (approx 0.3R + 0.59G + 0.11B in Q8.8).
         s32 luma = (r * 77 + g * 151 + b * 28) >> 8;
 
-        // Contrast x1.35 about the midpoint (16).
-        r = 16 + ((r - 16) * 173 >> 7);
-        g = 16 + ((g - 16) * 173 >> 7);
-        b = 16 + ((b - 16) * 173 >> 7);
-        // Saturation x1.4: push each channel away from the luma.
-        r = luma + ((r - luma) * 179 >> 7);
-        g = luma + ((g - luma) * 179 >> 7);
-        b = luma + ((b - luma) * 179 >> 7);
-        // Brightness lift.
+        // Contrast ~x1.40 about the midpoint (16).
+        r = 16 + ((r - 16) * 179 >> 7);
+        g = 16 + ((g - 16) * 179 >> 7);
+        b = 16 + ((b - 16) * 179 >> 7);
+        // Saturation ~x1.45: push each channel away from the luma.
+        r = luma + ((r - luma) * 185 >> 7);
+        g = luma + ((g - luma) * 185 >> 7);
+        b = luma + ((b - luma) * 185 >> 7);
+        // Gentle brightness lift.
         r += (31 - r) >> 3;
         g += (31 - g) >> 3;
         b += (31 - b) >> 3;
+        // Warm ambient "light" tint: nudge warm (more red, less blue), biased
+        // toward the lit mid/high tones so shadows stay neutral.
+        if (luma > 8)
+        {
+            r += 1;
+            b -= 1;
+        }
+        // Palette-space "bloom": the brighter a color, the more it bleeds
+        // toward white (fakes a soft light bleed with no blend registers).
+        if (luma > 20)
+        {
+            s32 bloom = (luma - 20) >> 1;
+            r += (31 - r) * bloom >> 5;
+            g += (31 - g) * bloom >> 5;
+            b += (31 - b) * bloom >> 5;
+        }
         palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
     }
 }
