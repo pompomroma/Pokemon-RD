@@ -898,30 +898,43 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
         // Per-color luma (approx 0.3R + 0.59G + 0.11B in Q8.8).
         s32 luma = (r * 77 + g * 151 + b * 28) >> 8;
 
-        // Contrast ~x1.40 about the midpoint (16).
-        r = 16 + ((r - 16) * 179 >> 7);
-        g = 16 + ((g - 16) * 179 >> 7);
-        b = 16 + ((b - 16) * 179 >> 7);
-        // Saturation ~x1.45: push each channel away from the luma.
-        r = luma + ((r - luma) * 185 >> 7);
-        g = luma + ((g - luma) * 185 >> 7);
-        b = luma + ((b - luma) * 185 >> 7);
-        // Gentle brightness lift.
-        r += (31 - r) >> 3;
-        g += (31 - g) >> 3;
-        b += (31 - b) >> 3;
-        // Warm ambient "light" tint: nudge warm (more red, less blue), biased
-        // toward the lit mid/high tones so shadows stay neutral.
-        if (luma > 8)
+        // Filmic contrast ~x1.20 about the midpoint (16) — shape the tones
+        // without the pumped, plasticky look of a heavy contrast curve.
+        r = 16 + ((r - 16) * 154 >> 7);
+        g = 16 + ((g - 16) * 154 >> 7);
+        b = 16 + ((b - 16) * 154 >> 7);
+        // Saturation ~x0.86: pull each channel TOWARD the luma. Slightly
+        // desaturating is the key to a mature, natural tone instead of the
+        // over-saturated "cartoon" candy colors.
+        r = luma + ((r - luma) * 110 >> 7);
+        g = luma + ((g - luma) * 110 >> 7);
+        b = luma + ((b - luma) * 110 >> 7);
+        // Deepen the darkest tones (~x0.90) for richer, grounded blacks instead
+        // of a flat, milky shadow. No global brightness lift.
+        if (luma < 11)
+        {
+            r = r * 29 >> 5;
+            g = g * 29 >> 5;
+            b = b * 29 >> 5;
+        }
+        // Subtle filmic tonal split: cool the shadows a touch, warm the
+        // highlights a touch (teal/orange) — reads as graded film, not the old
+        // uniform warm wash.
+        if (luma < 12)
+        {
+            b += 1;
+        }
+        else if (luma > 18)
         {
             r += 1;
             b -= 1;
         }
-        // Palette-space "bloom": the brighter a color, the more it bleeds
-        // toward white (fakes a soft light bleed with no blend registers).
-        if (luma > 20)
+        // Palette-space "bloom" — kept, for the detailed bright-sunlight bleed.
+        // Threshold raised so only genuine highlights bloom toward white and the
+        // midtones stay controlled (no more everything-glows brightness).
+        if (luma > 23)
         {
-            s32 bloom = (luma - 20) >> 1;
+            s32 bloom = (luma - 23) >> 1;
             r += (31 - r) * bloom >> 5;
             g += (31 - g) * bloom >> 5;
             b += (31 - b) * bloom >> 5;
@@ -958,12 +971,15 @@ void GradePalette_BattleSprite(u16 *palette, u16 count)
         r = 16 + ((r - 16) * 141 >> 7);
         g = 16 + ((g - 16) * 141 >> 7);
         b = 16 + ((b - 16) * 141 >> 7);
-        // Richer color ~x1.18: push each channel away from the luma.
-        r = luma + ((r - luma) * 151 >> 7);
-        g = luma + ((g - luma) * 151 >> 7);
-        b = luma + ((b - luma) * 151 >> 7);
+        // Near-neutral saturation ~x1.06: just a hair of richness so mons stay
+        // true to their own colors and don't read as candy against the more
+        // muted, mature background.
+        r = luma + ((r - luma) * 136 >> 7);
+        g = luma + ((g - luma) * 136 >> 7);
+        b = luma + ((b - luma) * 136 >> 7);
         // Soft rim highlight: lift only the brightest tones a touch toward white
-        // so lit edges catch the "light" without washing out the mon's colors.
+        // so lit edges catch the "light" (object reflection) without washing out
+        // the mon's colors.
         if (luma > 24)
         {
             r += (31 - r) >> 3;
