@@ -26,4 +26,10 @@ u16 CoopGroup_GetJoinedCode(void);
 // companions along it. Safe to call every field frame (self-gates).
 void CoopGroup_Update(void);
 
+// Team-up battle framing: when a group is active and the player has 2+ able
+// Pokemon, upgrade the pending wild battle to a double (the group fights
+// side-by-side). Call after gBattleTypeFlags is set and the first wild mon is
+// in gEnemyParty[0].
+void CoopGroup_TryMakeWildBattleDouble(void);
+
 #endif // GUARD_COOP_GROUP_H

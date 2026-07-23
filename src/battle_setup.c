@@ -2,6 +2,7 @@
 #include "task.h"
 #include "help_system.h"
 #include "overworld.h"
+#include "coop_group.h"
 #include "item.h"
 #include "sound.h"
 #include "pokemon.h"
@@ -251,6 +252,7 @@ static void DoStandardWildBattle(void)
     StopPlayerAvatar();
     gMain.savedCallback = CB2_EndWildBattle;
     gBattleTypeFlags = 0;
+    CoopGroup_TryMakeWildBattleDouble(); // co-op group -> double wild battle
     CreateBattleStartTask(GetWildBattleTransition(), 0);
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);

@@ -3,8 +3,14 @@
 #include "event_object_movement.h"
 #include "script_movement.h"
 #include "script.h"
+#include "pokemon.h"
+#include "battle.h"
+#include "random.h"
 #include "constants/event_objects.h"
 #include "constants/event_object_movement.h"
+#include "constants/battle.h"
+#include "constants/pokemon.h"
+#include "constants/species.h"
 
 // Offline "party group": up to COOP_MAX_MEMBERS companion object events trail the
 // player single-file along the exact path the player walked. Driven each field
@@ -130,6 +136,36 @@ static void CoopSpawn(struct ObjectEvent *player)
         sMemberSeq[i] = 0; // spawned on the player's tile (seq 0)
     }
     sSpawned = TRUE;
+}
+
+void CoopGroup_TryMakeWildBattleDouble(void)
+{
+    u8 i, able = 0;
+    u16 species;
+    u8 level;
+
+    if (!CoopGroup_IsActive())
+        return;
+
+    // Need at least two able (non-egg, HP > 0) party Pokemon to field a double.
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL) != SPECIES_NONE
+         && !GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG, NULL)
+         && GetMonData(&gPlayerParty[i], MON_DATA_HP, NULL) > 0)
+            able++;
+    }
+    if (able < 2)
+        return;
+
+    species = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES, NULL);
+    level = GetMonData(&gEnemyParty[0], MON_DATA_LEVEL, NULL);
+    if (species == SPECIES_NONE || species >= NUM_SPECIES)
+        return;
+
+    // Add a second wild ally so the co-op group fights side-by-side.
+    CreateMon(&gEnemyParty[1], species, level, USE_RANDOM_IVS, FALSE, 0, FALSE, 0);
+    gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;
 }
 
 void CoopGroup_Update(void)
