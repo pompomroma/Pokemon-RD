@@ -377,7 +377,11 @@ struct SaveBlock2
     /*0xB24*/ u8 randomizerMode;    // 0 = normal, 1 = randomizer
     /*0xB25*/ u8 filler_B25[0x3];
     /*0xB28*/ struct StatCustomRecord statCustom[STAT_CUSTOM_RECORDS_COUNT]; // 48 * 16 = 0x300
-    /*0xE28*/ u8 filler_B20[0xF8];
+    /*0xE28*/ u16 coopCode;          // this save's own 4-digit co-op group code (0..9999)
+    /*0xE2A*/ u16 coopJoinedCode;    // the code the player entered to join a group (0 = none)
+    /*0xE2C*/ u8 coopMemberCount;    // number of active companion avatars (0..3)
+    /*0xE2D*/ u8 coopMemberGfx[3];   // OBJ_EVENT_GFX_* of each companion
+    /*0xE30*/ u8 filler_B20[0xF0];
     /*0xF20*/ u32 encryptionKey;
 }; // size: 0xF24
 
