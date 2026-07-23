@@ -10,11 +10,15 @@
 #include "strings.h"
 #include "field_fadetransition.h"
 #include "game_language.h"
+#include "coop_group.h"
+#include "string_util.h"
+#include "sound.h"
+#include "constants/songs.h"
 #include "gba/m4a_internal.h"
 
-// Vertical distance between option rows. Tightened from the stock 13 so the
-// added LANGUAGE row keeps all 8 rows inside the options window.
-#define OPTION_ROW_PITCH 11
+// Vertical distance between option rows. Tightened so the added LANGUAGE and
+// CO-OP CODE rows keep all 9 rows inside the options window.
+#define OPTION_ROW_PITCH 10
 
 // can't include the one in menu_helpers.h since Task_OptionMenu needs bool32 for matching
 bool32 IsActiveOverworldLinkBusy(void);
@@ -29,6 +33,7 @@ enum
     MENUITEM_BUTTONMODE,
     MENUITEM_FRAMETYPE,
     MENUITEM_LANGUAGE,
+    MENUITEM_COOP,
     MENUITEM_CANCEL,
     MENUITEM_COUNT
 };
@@ -48,6 +53,9 @@ struct OptionMenu
     /*0x10*/ u8 loadState;
     /*0x11*/ u8 state;
     /*0x12*/ u8 loadPaletteState;
+    u8 editing;    // TRUE while entering a co-op code
+    u8 editDigit;  // active digit 0..3 (leftmost = 0)
+    u16 editCode;  // the 4-digit code being edited
 };
 
 static EWRAM_DATA struct OptionMenu *sOptionMenuPtr = NULL;
@@ -137,7 +145,14 @@ static const struct BgTemplate sOptionMenuBgTemplates[] =
 };
 
 static const u16 sOptionMenuPalette[] = INCBIN_U16("graphics/misc/option_menu.gbapal");
-static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 2, 0};
+static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 2, 1, 0};
+
+// Co-op code row strings.
+static const u8 sText_CoopCode_En[] = _("CO-OP CODE");
+static const u8 sCoopBracketL[] = _("(");
+static const u8 sCoopBracketR[] = _(")");
+static const u8 sCoopJoined[] = _(" JOINED");
+static const u16 sCoopPow10[4] = {1000, 100, 10, 1};
 
 // Korean labels for the localized rows (real Hangul via baked font glyphs).
 // Defined in graphics/fonts/korean_glyphs so the strings resolve to the
@@ -155,6 +170,7 @@ static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
     [MENUITEM_BUTTONMODE]  = gText_ButtonMode,
     [MENUITEM_FRAMETYPE]   = gText_Frame,
     [MENUITEM_LANGUAGE]    = sText_Language_En,
+    [MENUITEM_COOP]        = sText_CoopCode_En,
     [MENUITEM_CANCEL]      = gText_OptionMenuCancel,
 };
 
@@ -168,6 +184,7 @@ static const u8 *const sOptionMenuItemsNamesKor[MENUITEM_COUNT] =
     [MENUITEM_BUTTONMODE]  = sKorText_ButtonMode,
     [MENUITEM_FRAMETYPE]   = sKorText_Frame,
     [MENUITEM_LANGUAGE]    = sKorText_Language,
+    [MENUITEM_COOP]        = sText_CoopCode_En, // no baked Hangul; falls back to English
     [MENUITEM_CANCEL]      = sKorText_Cancel,
 };
 
@@ -450,9 +467,54 @@ static void Task_OptionMenu(u8 taskId)
 }
 
 static u8 OptionMenu_ProcessInput(void)
-{ 
+{
     u16 current;
     u16 *curr;
+
+    // Co-op code digit editor sub-mode: DPAD up/down changes the active digit,
+    // left/right moves between digits, A confirms (forms/leaves the group), B cancels.
+    if (sOptionMenuPtr->editing)
+    {
+        u8 dg = sOptionMenuPtr->editDigit;
+        u16 dv = (sOptionMenuPtr->editCode / sCoopPow10[dg]) % 10;
+        if (JOY_NEW(DPAD_UP))
+        {
+            sOptionMenuPtr->editCode += (((dv + 1) % 10) - dv) * sCoopPow10[dg];
+            PlaySE(SE_SELECT);
+            return 4;
+        }
+        else if (JOY_NEW(DPAD_DOWN))
+        {
+            sOptionMenuPtr->editCode += (((dv + 9) % 10) - dv) * sCoopPow10[dg];
+            PlaySE(SE_SELECT);
+            return 4;
+        }
+        else if (JOY_NEW(DPAD_LEFT))
+        {
+            sOptionMenuPtr->editDigit = (dg + 3) & 3;
+            return 4;
+        }
+        else if (JOY_NEW(DPAD_RIGHT))
+        {
+            sOptionMenuPtr->editDigit = (dg + 1) & 3;
+            return 4;
+        }
+        else if (JOY_NEW(A_BUTTON))
+        {
+            CoopGroup_JoinByCode(sOptionMenuPtr->editCode);
+            sOptionMenuPtr->editing = FALSE;
+            PlaySE(SE_SELECT);
+            return 4;
+        }
+        else if (JOY_NEW(B_BUTTON))
+        {
+            sOptionMenuPtr->editing = FALSE;
+            PlaySE(SE_SELECT);
+            return 4;
+        }
+        return 0;
+    }
+
     if (JOY_REPT(DPAD_RIGHT))
     {
         current = sOptionMenuPtr->option[(sOptionMenuPtr->cursorPos)];
@@ -493,6 +555,15 @@ static u8 OptionMenu_ProcessInput(void)
         else
             sOptionMenuPtr->cursorPos = sOptionMenuPtr->cursorPos + 1;
         return 3;
+    }
+    else if (JOY_NEW(A_BUTTON) && sOptionMenuPtr->cursorPos == MENUITEM_COOP)
+    {
+        // Open the 4-digit code editor, pre-filled with the current join code.
+        sOptionMenuPtr->editing = TRUE;
+        sOptionMenuPtr->editDigit = 0;
+        sOptionMenuPtr->editCode = CoopGroup_GetJoinedCode();
+        PlaySE(SE_SELECT);
+        return 4;
     }
     else if (JOY_NEW(B_BUTTON) || JOY_NEW(A_BUTTON))
     {
@@ -541,6 +612,32 @@ static void BufferOptionMenuString(u8 selection)
         break;
     case MENUITEM_LANGUAGE:
         AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sLanguageOptions[sOptionMenuPtr->option[selection]]);
+        break;
+    case MENUITEM_COOP:
+        if (sOptionMenuPtr->editing)
+        {
+            u8 d;
+            str[0] = EOS;
+            for (d = 0; d < 4; d++)
+            {
+                u16 dv = (sOptionMenuPtr->editCode / sCoopPow10[d]) % 10;
+                if (d == sOptionMenuPtr->editDigit)
+                    StringAppend(str, sCoopBracketL);
+                ConvertIntToDecimalStringN(buf, dv, STR_CONV_MODE_LEADING_ZEROS, 1);
+                StringAppend(str, buf);
+                if (d == sOptionMenuPtr->editDigit)
+                    StringAppend(str, sCoopBracketR);
+            }
+            AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, str);
+        }
+        else
+        {
+            u16 shown = CoopGroup_IsActive() ? CoopGroup_GetJoinedCode() : CoopGroup_GetOwnCode();
+            ConvertIntToDecimalStringN(str, shown, STR_CONV_MODE_LEADING_ZEROS, 4);
+            if (CoopGroup_IsActive())
+                StringAppend(str, sCoopJoined);
+            AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, str);
+        }
         break;
     default:
         break;
