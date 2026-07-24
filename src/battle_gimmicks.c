@@ -129,6 +129,59 @@ bool8 Gimmick_TrySwitchInActivate(u8 battler)
     return FALSE;
 }
 
+// Per-type Z-Move base power. Each type's Z-Move hits for a different, fixed
+// power (Sun/Moon style), so a fused/typed mon's Z-Move feels distinct.
+static const u8 sZMovePowerByType[] =
+{
+    [TYPE_NORMAL]   = 200,
+    [TYPE_FIGHTING] = 190,
+    [TYPE_FLYING]   = 170,
+    [TYPE_POISON]   = 175,
+    [TYPE_GROUND]   = 180,
+    [TYPE_ROCK]     = 180,
+    [TYPE_BUG]      = 170,
+    [TYPE_GHOST]    = 175,
+    [TYPE_STEEL]    = 180,
+    [TYPE_MYSTERY]  = 180,
+    [TYPE_FIRE]     = 185,
+    [TYPE_WATER]    = 185,
+    [TYPE_GRASS]    = 185,
+    [TYPE_ELECTRIC] = 175,
+    [TYPE_PSYCHIC]  = 185,
+    [TYPE_ICE]      = 180,
+    [TYPE_DRAGON]   = 190,
+    [TYPE_DARK]     = 180,
+};
+
+// Is the battler allowed to charge `move` into its Z-Move right now?
+bool8 Gimmick_CanArmZMove(u8 battler, u16 move)
+{
+    if (move == MOVE_NONE || move == MOVE_FUSION_BURST || move >= MOVES_COUNT)
+        return FALSE;
+    if (gBattleMoves[move].power == 0) // status moves have no Z-Move
+        return FALSE;
+    if (gBattleStruct->zMoveUsed & gBitTable[battler]) // one per battle
+        return FALSE;
+    return HasArtifact(battler, ITEM_Z_CRYSTAL);
+}
+
+bool8 Gimmick_IsZMoveArmed(u8 battler)
+{
+    return (gBattleStruct->zMoveArmed & gBitTable[battler]) != 0;
+}
+
+// SELECT toggles the Z-Move on/off for the chosen move; returns the new state.
+bool8 Gimmick_ToggleArmZMove(u8 battler)
+{
+    if (gBattleStruct->zMoveArmed & gBitTable[battler])
+    {
+        gBattleStruct->zMoveArmed &= ~gBitTable[battler];
+        return FALSE;
+    }
+    gBattleStruct->zMoveArmed |= gBitTable[battler];
+    return TRUE;
+}
+
 void Gimmick_ApplyMovePower(u8 battler, u16 move)
 {
     u16 power = gBattleMoves[move].power;
@@ -136,14 +189,22 @@ void Gimmick_ApplyMovePower(u8 battler, u16 move)
     gBattleStruct->zMoveThisMove &= ~gBitTable[battler];
 
     if (power == 0 || move == MOVE_FUSION_BURST)
+    {
+        gBattleStruct->zMoveArmed &= ~gBitTable[battler]; // can't Z a status move
         return; // status moves and the fusion signature keep their own rules
+    }
 
-    // Z-Move: the first damaging move of the battle is supercharged.
-    if (HasArtifact(battler, ITEM_Z_CRYSTAL)
+    // Z-Move: fired only when the player armed it (SELECT on the move screen),
+    // once per battle. Power is the type's fixed Z base power (min the move's own
+    // supercharge), so every type's Z-Move is distinct.
+    if ((gBattleStruct->zMoveArmed & gBitTable[battler])
      && !(gBattleStruct->zMoveUsed & gBitTable[battler]))
     {
-        u32 boosted = power * 7 / 4;
+        u8 type = gBattleMoves[move].type;
+        u32 zPower = (type < ARRAY_COUNT(sZMovePowerByType)) ? sZMovePowerByType[type] : 180;
+        u32 boosted = max(power * 2, zPower);
 
+        gBattleStruct->zMoveArmed &= ~gBitTable[battler];
         gBattleStruct->zMoveUsed |= gBitTable[battler];
         gBattleStruct->zMoveThisMove |= gBitTable[battler];
         gDynamicBasePower = min(boosted, 250);

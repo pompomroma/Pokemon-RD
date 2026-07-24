@@ -450,6 +450,30 @@ void HandleInputChooseMove(void)
             MoveSelectionDisplayMoveType();
         return;
     }
+    // R charges the held Z Crystal: the highlighted damaging move becomes the
+    // mon's Z-Move (a distinct, per-type, once-per-battle super-move). R again
+    // cancels. The move-info window shows a "Z:" tag while armed.
+    if (JOY_NEW(R_BUTTON))
+    {
+        u16 hlMove = moveInfo->moves[gMoveSelectionCursor[gActiveBattler]];
+
+        if (Gimmick_CanArmZMove(gActiveBattler, hlMove))
+        {
+            if (Gimmick_ToggleArmZMove(gActiveBattler))
+            {
+                // Z-charge "cutscene": a radiant gold flash over the mon + a
+                // dramatic sound, in the spirit of the Sun/Moon Z-Power ritual.
+                BlendPalette(OBJ_PLTT_ID(gActiveBattler), 16, 10, RGB(31, 28, 8));
+                PlaySE(SE_M_MEGA_KICK);
+            }
+            else
+            {
+                PlaySE(SE_SELECT);
+            }
+            MoveSelectionDisplayMoveType();
+        }
+        return;
+    }
     if (JOY_NEW(A_BUTTON))
     {
         u8 moveTarget;
@@ -513,6 +537,7 @@ void HandleInputChooseMove(void)
     else if (JOY_NEW(B_BUTTON))
     {
         PlaySE(SE_SELECT);
+        gBattleStruct->zMoveArmed &= ~gBitTable[gActiveBattler]; // cancel Z arming
         BtlController_EmitTwoReturnValues(1, 10, 0xFFFF);
         PlayerBufferExecCompleted();
         ResetPaletteFadeControl();
@@ -1463,6 +1488,14 @@ static void MoveSelectionDisplayMoveType(void)
     *txtPtr++ = 6;
     *txtPtr++ = 1;
     txtPtr = StringCopy(txtPtr, gText_MoveInterfaceDynamicColors);
+
+    // When the player has armed the Z-Move (R), tag the move info so it's clear
+    // the next move fires as the Z-Move.
+    if (Gimmick_IsZMoveArmed(gActiveBattler))
+    {
+        *txtPtr++ = CHAR_Z;
+        *txtPtr++ = CHAR_COLON;
+    }
 
     if (gBattleMoves[move].power == 0)
     {

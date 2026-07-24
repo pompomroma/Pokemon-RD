@@ -461,9 +461,10 @@ struct BattleStruct
     u8 gigantamaxed;      // bitmask: Dynamaxed battlers that are fused (Gigantamax)
     u8 zMoveUsed;         // bitmask: battlers that have spent their Z-Move
     u8 zMoveThisMove;     // bitmask: battler's current move is the Z-Move
+    u8 zMoveArmed;        // bitmask: player armed the Z-Move (SELECT) for this move
     u8 formChanged;       // bitmask: battlers that used their START form change
     u8 dynamaxTurns[MAX_BATTLERS_COUNT]; // remaining Dynamax turns per battler
-    u8 padding_1E5[0x11];
+    u8 padding_1E5[0x10];
 }; // size == 0x200 bytes
 
 extern struct BattleStruct *gBattleStruct;

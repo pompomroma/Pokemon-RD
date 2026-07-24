@@ -30,6 +30,13 @@ void Gimmick_ApplyMovePower(u8 battler, u16 move);
 // TRUE if the battler's current move should display with the "Z-" prefix.
 bool8 Gimmick_IsZMoveName(u8 battler, u16 move, u8 *dest);
 
+// Z-Move arming, from the move-selection screen (SELECT button). A holder of a
+// Z Crystal (or a fused mon that stored one) that has not spent its Z-Move yet
+// can "charge" the highlighted damaging move into its Z-Move: SELECT toggles it.
+bool8 Gimmick_CanArmZMove(u8 battler, u16 move); // eligible to arm this move?
+bool8 Gimmick_IsZMoveArmed(u8 battler);          // currently armed?
+bool8 Gimmick_ToggleArmZMove(u8 battler);        // flip armed state; TRUE if now armed
+
 // End-of-turn Dynamax countdown; reverts stats when it expires.
 void Gimmick_EndTurnDynamaxCountdown(void);
 
