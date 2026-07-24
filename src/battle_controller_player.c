@@ -442,6 +442,14 @@ void HandleInputChooseMove(void)
     struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
 
     PreviewDeterminativeMoveTargets();
+    // START triggers the once-per-battle "form change" (Mega/Dynamax/Gigantamax,
+    // or both at once for a fused mon): a huge all-stat boost + a vivid recolor.
+    if (JOY_NEW(START_BUTTON))
+    {
+        if (Gimmick_TryStartFormChange(gActiveBattler))
+            MoveSelectionDisplayMoveType();
+        return;
+    }
     if (JOY_NEW(A_BUTTON))
     {
         u8 moveTarget;

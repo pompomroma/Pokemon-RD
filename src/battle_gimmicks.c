@@ -9,10 +9,12 @@
 #include "pokemon.h"
 #include "pokemon_fusion.h"
 #include "characters.h"
+#include "sound.h"
 #include "constants/battle.h"
 #include "constants/battle_string_ids.h"
 #include "constants/items.h"
 #include "constants/moves.h"
+#include "constants/songs.h"
 
 #define DYNAMAX_TURN_COUNT 3
 
@@ -158,6 +160,51 @@ bool8 Gimmick_IsZMoveName(u8 battler, u16 move, u8 *dest)
     for (i = 0; name[i] != EOS && n < MOVE_NAME_LENGTH; i++)
         dest[n++] = name[i];
     dest[n] = EOS;
+    return TRUE;
+}
+
+bool8 Gimmick_TryStartFormChange(u8 battler)
+{
+    u16 item, color, num, den;
+    bool8 fused, mega, dyna, zc;
+
+    if (gBattleMons[battler].hp == 0)
+        return FALSE;
+    if (gBattleStruct->formChanged & gBitTable[battler])
+        return FALSE; // once per battle per battler
+
+    item = HeldArtifact(battler);
+    fused = IsBattlerFused(battler);
+    mega = (item == ITEM_MEGA_STONE);
+    dyna = (item == ITEM_DYNA_BAND);
+    zc = (item == ITEM_Z_CRYSTAL);
+    if (!mega && !dyna && !zc && !fused)
+        return FALSE; // nothing to transform into
+
+    gBattleStruct->formChanged |= gBitTable[battler];
+
+    // Huge boost to every stat. A fused mon channels BOTH forms at once, so it
+    // gets the biggest boost of all.
+    num = fused ? 5 : 2; // x2.5 fused, x2 otherwise
+    den = fused ? 2 : 1;
+    gBattleMons[battler].attack    = MultiplyStat(gBattleMons[battler].attack, num, den);
+    gBattleMons[battler].defense   = MultiplyStat(gBattleMons[battler].defense, num, den);
+    gBattleMons[battler].speed     = MultiplyStat(gBattleMons[battler].speed, num, den);
+    gBattleMons[battler].spAttack  = MultiplyStat(gBattleMons[battler].spAttack, num, den);
+    gBattleMons[battler].spDefense = MultiplyStat(gBattleMons[battler].spDefense, num, den);
+    // HP surge (heal only; maxHP unchanged so the health bar stays consistent).
+    gBattleMons[battler].hp += gBattleMons[battler].maxHP / 2;
+    if (gBattleMons[battler].hp > gBattleMons[battler].maxHP)
+        gBattleMons[battler].hp = gBattleMons[battler].maxHP;
+
+    // "Cooler look": recolor the battler with a vivid form tint.
+    if (fused)      color = RGB2(31, 12, 31); // radiant magenta (both forms)
+    else if (mega)  color = RGB2(31, 26, 6);  // gold
+    else if (dyna)  color = RGB2(30, 6, 18);  // crimson
+    else            color = RGB2(10, 28, 31); // Z-Crystal cyan
+    BlendPalette(OBJ_PLTT_ID(battler), 16, 9, color);
+
+    PlaySE(SE_M_MEGA_KICK);
     return TRUE;
 }
 

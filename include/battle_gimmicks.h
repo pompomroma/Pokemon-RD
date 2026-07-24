@@ -33,4 +33,11 @@ bool8 Gimmick_IsZMoveName(u8 battler, u16 move, u8 *dest);
 // End-of-turn Dynamax countdown; reverts stats when it expires.
 void Gimmick_EndTurnDynamaxCountdown(void);
 
+// Manual "form change", triggered by pressing START on the move-selection
+// screen. A holder of a Mega Stone / Dyna Band / Z Crystal (or any fused mon)
+// powers up ONCE per battle: a huge boost to every stat plus a vivid palette
+// recolor. A fused mon channels both forms for the biggest boost of all.
+// Returns TRUE if a form change fired this call.
+bool8 Gimmick_TryStartFormChange(u8 battler);
+
 #endif // GUARD_BATTLE_GIMMICKS_H
