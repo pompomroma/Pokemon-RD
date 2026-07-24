@@ -159,6 +159,7 @@ const u8 gText_WhatWouldYouLikeToDo[] = _("What would you like to do?");
 const u8 gText_MenuPokedex[] = _("POKéDEX");
 const u8 gText_MenuBattleHub[] = _("HUB");
 const u8 gText_MenuTradeHub[] = _("TRADE");
+const u8 gText_MenuDimensionHole[] = _("HOLE");
 const u8 gText_MenuBag[] = _("BAG");
 const u8 gText_MenuPokenav[] = _("ポケナビ");
 const u8 gText_MenuPlayer[] = _("{PLAYER}");
@@ -908,6 +909,7 @@ const u8 gStartMenuDesc_Exit[] = _("Close this MENU window.");
 const u8 gStartMenuDesc_Retire[] = _("Retire from the SAFARI GAME and return to\nthe registration counter.");
 const u8 gStartMenuDesc_BattleHub[] = _("Enter the BATTLE HUB for single and\nteam battles, or link play.");
 const u8 gStartMenuDesc_TradeHub[] = _("Enter the TRADE HUB to trade POKéMON\nfrom your PARTY or BOXES.");
+const u8 gStartMenuDesc_DimensionHole[] = _("Dive into a random ULTRA HOLE or\nDYNAMAX HOLE and beat wild bosses.");
 
 #include "data/text/quest_log.h"
 

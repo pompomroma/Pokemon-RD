@@ -1263,5 +1263,6 @@ extern const u8 TradeCenter_TerminateLink[];
 
 extern const u8 BattleHub_EventScript_Enter[];
 extern const u8 TradeHub_EventScript_Enter[];
+extern const u8 DimensionHole_EventScript_Enter[];
 
 #endif //GUARD_EVENT_SCRIPTS_H

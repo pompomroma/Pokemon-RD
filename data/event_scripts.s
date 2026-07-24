@@ -512,6 +512,8 @@ gStdScriptsEnd::
 	.include "data/maps/SixIsland_WaterPath_House1/scripts.inc"
 	.include "data/maps/SixIsland_WaterPath_House2/scripts.inc"
 	.include "data/maps/SevenIsland_SevaultCanyon_House/scripts.inc"
+	.include "data/maps/UltraHole/scripts.inc"
+	.include "data/maps/DynamaxHole/scripts.inc"
 
 	.include "data/maps/ViridianForest/text.inc"
 	.include "data/maps/MtMoon_1F/text.inc"
@@ -803,6 +805,8 @@ gStdScriptsEnd::
 	.include "data/maps/SixIsland_WaterPath_House1/text.inc"
 	.include "data/maps/SixIsland_WaterPath_House2/text.inc"
 	.include "data/maps/SevenIsland_SevaultCanyon_House/text.inc"
+	.include "data/maps/UltraHole/text.inc"
+	.include "data/maps/DynamaxHole/text.inc"
 
 	.include "data/scripts/std_msgbox.inc"
 	.include "data/scripts/trainer_battle.inc"
@@ -1362,3 +1366,5 @@ Text_TestMsg::
 	.include "data/text/pokedude.inc"
 	.include "data/scripts/battle_hub.inc"
 	.include "data/text/battle_hub.inc"
+	.include "data/scripts/dimension_hole.inc"
+	.include "data/text/dimension_hole.inc"

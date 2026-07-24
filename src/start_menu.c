@@ -51,6 +51,7 @@ enum StartMenuOption
     STARTMENU_PLAYER2,
     STARTMENU_BATTLE_HUB,
     STARTMENU_TRADE_HUB,
+    STARTMENU_DIMENSION_HOLE,
     MAX_STARTMENU_ITEMS
 };
 
@@ -92,6 +93,7 @@ static bool8 StartMenuSafariZoneRetireCallback(void);
 static bool8 StartMenuLinkPlayerCallback(void);
 static bool8 StartMenuBattleHubCallback(void);
 static bool8 StartMenuTradeHubCallback(void);
+static bool8 StartMenuDimensionHoleCallback(void);
 static bool8 StartCB_Save1(void);
 static bool8 StartCB_Save2(void);
 static void StartMenu_PrepareForSave(void);
@@ -128,7 +130,8 @@ static const struct MenuAction sStartMenuActionTable[] = {
     [STARTMENU_RETIRE]  = { gText_MenuRetire,  {.u8_void = StartMenuSafariZoneRetireCallback} },
     [STARTMENU_PLAYER2] = { gText_MenuPlayer,  {.u8_void = StartMenuLinkPlayerCallback} },
     [STARTMENU_BATTLE_HUB] = { gText_MenuBattleHub, {.u8_void = StartMenuBattleHubCallback} },
-    [STARTMENU_TRADE_HUB]  = { gText_MenuTradeHub,  {.u8_void = StartMenuTradeHubCallback} }
+    [STARTMENU_TRADE_HUB]  = { gText_MenuTradeHub,  {.u8_void = StartMenuTradeHubCallback} },
+    [STARTMENU_DIMENSION_HOLE] = { gText_MenuDimensionHole, {.u8_void = StartMenuDimensionHoleCallback} }
 };
 
 static const struct WindowTemplate sSafariZoneStatsWindowTemplate = {
@@ -152,7 +155,8 @@ static const u8 *const sStartMenuDescPointers[] = {
     gStartMenuDesc_Retire,
     gStartMenuDesc_Player,
     gStartMenuDesc_BattleHub,
-    gStartMenuDesc_TradeHub
+    gStartMenuDesc_TradeHub,
+    gStartMenuDesc_DimensionHole
 };
 
 static const struct BgTemplate sBGTemplates_AfterLinkSaveMessage[] = {
@@ -230,6 +234,7 @@ static void SetUpStartMenu_NormalField(void)
     {
         AppendToStartMenuItems(STARTMENU_BATTLE_HUB);
         AppendToStartMenuItems(STARTMENU_TRADE_HUB);
+        AppendToStartMenuItems(STARTMENU_DIMENSION_HOLE);
     }
     AppendToStartMenuItems(STARTMENU_SAVE);
     AppendToStartMenuItems(STARTMENU_OPTION);
@@ -478,13 +483,19 @@ static bool8 StartMenuTradeHubCallback(void)
     return StartMenuRunFieldScript(TradeHub_EventScript_Enter);
 }
 
+static bool8 StartMenuDimensionHoleCallback(void)
+{
+    return StartMenuRunFieldScript(DimensionHole_EventScript_Enter);
+}
+
 static void StartMenu_FadeScreenIfLeavingOverworld(void)
 {
     if (sStartMenuCallback != StartMenuSaveCallback
      && sStartMenuCallback != StartMenuExitCallback
      && sStartMenuCallback != StartMenuSafariZoneRetireCallback
      && sStartMenuCallback != StartMenuBattleHubCallback
-     && sStartMenuCallback != StartMenuTradeHubCallback)
+     && sStartMenuCallback != StartMenuTradeHubCallback
+     && sStartMenuCallback != StartMenuDimensionHoleCallback)
     {
         StopPokemonLeagueLightingEffectTask();
         FadeScreen(FADE_TO_BLACK, 0);

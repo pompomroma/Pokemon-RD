@@ -608,6 +608,15 @@ void SetDynamicWarpWithCoords(s32 unused, s8 mapGroup, s8 mapNum, s8 warpId, s8 
     SetWarpData(&gSaveBlock1Ptr->dynamicWarp, mapGroup, mapNum, warpId, x, y);
 }
 
+// Remembers the player's exact current tile as the dynamic warp, so a later
+// MAP_DYNAMIC "climb out" warp (used by the Ultra/Dynamax Hole dungeons) returns
+// the player to this very spot instead of a fixed location. Called as a special
+// from the DIMENSION HOLE Start-menu entry before it warps into a dungeon.
+void SaveHoleReturnWarp(void)
+{
+    SetDynamicWarp(0, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, WARP_ID_DYNAMIC);
+}
+
 void SetWarpDestinationToDynamicWarp(u8 unusedWarpId)
 {
     sWarpDestination = gSaveBlock1Ptr->dynamicWarp;
