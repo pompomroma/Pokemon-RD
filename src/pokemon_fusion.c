@@ -7,6 +7,8 @@
 #include "pokemon.h"
 #include "pokemon_fusion.h"
 #include "pokemon_storage_system.h"
+#include "item.h"
+#include "constants/items.h"
 #include "constants/moves.h"
 #include "constants/pokemon.h"
 #include "constants/songs.h"
@@ -335,6 +337,16 @@ bool8 Fusion_FuseParty(u8 slotA, u8 slotB)
     rec->partnerLevel = GetMonData(monB, MON_DATA_LEVEL, NULL);
     rec->flags = FUSION_FLAG_ACTIVE;
 
+    // Remember both source items so a fused mon can use BOTH in battle (e.g. a
+    // Mega Stone + a Dyna Band) while its real item slot stays free for a third
+    // item. The items are handed back when the mon is un-fused.
+    rec->baseItem = GetMonData(monA, MON_DATA_HELD_ITEM, NULL);
+    rec->partnerItem = GetMonData(monB, MON_DATA_HELD_ITEM, NULL);
+    {
+        u16 none = ITEM_NONE;
+        SetMonData(monA, MON_DATA_HELD_ITEM, &none);
+    }
+
     Fusion_BuildFusedName(speciesA, speciesB, name);
     SetMonData(monA, MON_DATA_NICKNAME, name);
     GiveSignatureMove(monA);
@@ -364,12 +376,27 @@ bool8 Fusion_UnfuseParty(u8 slot)
     CreateMon(&gPlayerParty[gPlayerPartyCount], rec->partnerSpecies, rec->partnerLevel,
               USE_RANDOM_IVS, TRUE, rec->partnerPersonality, OT_ID_PLAYER_ID, 0);
 
+    // Hand the two stored items back: the partner item to the recreated partner,
+    // the base item to the base mon. If the base mon is holding a separate third
+    // item, bounce it to the bag so nothing is lost.
+    if (rec->partnerItem != ITEM_NONE)
+        SetMonData(&gPlayerParty[gPlayerPartyCount], MON_DATA_HELD_ITEM, &rec->partnerItem);
+    if (rec->baseItem != ITEM_NONE)
+    {
+        u16 held = GetMonData(mon, MON_DATA_HELD_ITEM, NULL);
+        if (held != ITEM_NONE)
+            AddBagItem(held, 1);
+        SetMonData(mon, MON_DATA_HELD_ITEM, &rec->baseItem);
+    }
+
     rec->personality = 0;
     rec->otId = 0;
     rec->partnerPersonality = 0;
     rec->partnerSpecies = SPECIES_NONE;
     rec->partnerLevel = 0;
     rec->flags = 0;
+    rec->baseItem = ITEM_NONE;
+    rec->partnerItem = ITEM_NONE;
 
     CalculateMonStats(mon);
     CalculatePlayerPartyCount();
@@ -396,6 +423,20 @@ struct Pokemon *Fusion_GetBattlerPartyMon(u8 battler)
     if (GetBattlerSide(battler) != B_SIDE_PLAYER)
         return NULL;
     return &gPlayerParty[gBattlerPartyIndexes[battler]];
+}
+
+// TRUE if a fused battler "holds" `item` through one of the two items stored in
+// its fusion record. Lets a fused mon use both a Mega Stone and a Dyna Band at
+// once while its real item slot carries a separate third item.
+bool8 Fusion_BattlerHasStoredItem(u8 battler, u16 item)
+{
+    struct Pokemon *mon = Fusion_GetBattlerPartyMon(battler);
+    struct FusionRecord *rec;
+
+    if (mon == NULL || item == ITEM_NONE)
+        return FALSE;
+    rec = Fusion_FindRecordByMon(&mon->box);
+    return rec != NULL && (rec->baseItem == item || rec->partnerItem == item);
 }
 
 bool8 Fusion_GetMoveNameForBattler(u8 battler, u16 move, u8 *dest)

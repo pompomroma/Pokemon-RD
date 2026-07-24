@@ -52,6 +52,7 @@ void Fusion_BuildSignatureMoveName(u16 species, u16 partnerSpecies, u8 *dest);
 bool8 Fusion_GetMoveNameForMon(struct BoxPokemon *boxMon, u16 move, u8 *dest);
 bool8 Fusion_GetMoveNameForBattler(u8 battler, u16 move, u8 *dest);
 struct Pokemon *Fusion_GetBattlerPartyMon(u8 battler);
+bool8 Fusion_BattlerHasStoredItem(u8 battler, u16 item);
 void Fusion_ApplyBattleTypes(u8 battler);
 void Fusion_SetSignatureMoveDynamics(u8 battler);
 void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic);

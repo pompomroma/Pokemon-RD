@@ -30,6 +30,19 @@ static u16 HeldArtifact(u8 battler)
     return gBattleMons[battler].item;
 }
 
+// A battler "has" an artifact if it holds it in its real item slot OR it stored
+// it in its fusion record (a fused mon keeps both source items and can hold a
+// separate third item in its real slot).
+static bool8 HasArtifact(u8 battler, u16 item)
+{
+    return HeldArtifact(battler) == item || Fusion_BattlerHasStoredItem(battler, item);
+}
+
+static bool8 HasBothMegaAndDyna(u8 battler)
+{
+    return HasArtifact(battler, ITEM_MEGA_STONE) && HasArtifact(battler, ITEM_DYNA_BAND);
+}
+
 static bool8 IsBattlerFused(u8 battler)
 {
     struct Pokemon *mon = Gimmick_GetBattlerPartyMon(battler);
@@ -48,7 +61,9 @@ static u16 MultiplyStat(u16 stat, u16 num, u16 den)
 
 void Gimmick_ApplyBattleStats(u8 battler)
 {
-    if (HeldArtifact(battler) == ITEM_MEGA_STONE)
+    // Independent (not exclusive): a fused mon carrying BOTH a Mega Stone and a
+    // Dyna Band gets both boosts stacked at once.
+    if (HasArtifact(battler, ITEM_MEGA_STONE))
     {
         // Mega Evolution: +30% to every non-HP stat.
         gBattleMons[battler].attack    = MultiplyStat(gBattleMons[battler].attack, 13, 10);
@@ -57,7 +72,7 @@ void Gimmick_ApplyBattleStats(u8 battler)
         gBattleMons[battler].spAttack  = MultiplyStat(gBattleMons[battler].spAttack, 13, 10);
         gBattleMons[battler].spDefense = MultiplyStat(gBattleMons[battler].spDefense, 13, 10);
     }
-    else if (gBattleStruct->dynamaxTurns[battler] != 0)
+    if (gBattleStruct->dynamaxTurns[battler] != 0)
     {
         // Dynamax swells the defenses; Gigantamax (a fused holder) more so.
         u16 num = (gBattleStruct->gigantamaxed & gBitTable[battler]) ? 7 : 3;
@@ -74,7 +89,7 @@ bool8 Gimmick_TrySwitchInActivate(u8 battler)
         return FALSE;
 
     // Mega Evolution entrance (once per battle per battler).
-    if (HeldArtifact(battler) == ITEM_MEGA_STONE
+    if (HasArtifact(battler, ITEM_MEGA_STONE)
      && !(gBattleStruct->megaEvolved & gBitTable[battler]))
     {
         gBattleStruct->megaEvolved |= gBitTable[battler];
@@ -84,7 +99,7 @@ bool8 Gimmick_TrySwitchInActivate(u8 battler)
     }
 
     // Dynamax / Gigantamax entrance (once per battler while not active).
-    if (HeldArtifact(battler) == ITEM_DYNA_BAND
+    if (HasArtifact(battler, ITEM_DYNA_BAND)
      && gBattleStruct->dynamaxTurns[battler] == 0
      && !(gBattleStruct->dynamaxed & gBitTable[battler]))
     {
@@ -124,7 +139,7 @@ void Gimmick_ApplyMovePower(u8 battler, u16 move)
         return; // status moves and the fusion signature keep their own rules
 
     // Z-Move: the first damaging move of the battle is supercharged.
-    if (HeldArtifact(battler) == ITEM_Z_CRYSTAL
+    if (HasArtifact(battler, ITEM_Z_CRYSTAL)
      && !(gBattleStruct->zMoveUsed & gBitTable[battler]))
     {
         u32 boosted = power * 7 / 4;
@@ -163,46 +178,78 @@ bool8 Gimmick_IsZMoveName(u8 battler, u16 move, u8 *dest)
     return TRUE;
 }
 
+// Per-type form-change tints, so every Pokemon's powered-up form looks distinct.
+static const u16 sFormTypeColors[] =
+{
+    [TYPE_NORMAL]   = RGB2(30, 28, 26),
+    [TYPE_FIGHTING] = RGB2(31, 14, 8),
+    [TYPE_FLYING]   = RGB2(18, 24, 31),
+    [TYPE_POISON]   = RGB2(24, 8, 28),
+    [TYPE_GROUND]   = RGB2(28, 22, 10),
+    [TYPE_ROCK]     = RGB2(24, 18, 10),
+    [TYPE_BUG]      = RGB2(22, 28, 8),
+    [TYPE_GHOST]    = RGB2(16, 8, 26),
+    [TYPE_STEEL]    = RGB2(22, 24, 28),
+    [TYPE_MYSTERY]  = RGB2(20, 20, 20),
+    [TYPE_FIRE]     = RGB2(31, 12, 6),
+    [TYPE_WATER]    = RGB2(6, 18, 31),
+    [TYPE_GRASS]    = RGB2(12, 31, 10),
+    [TYPE_ELECTRIC] = RGB2(31, 30, 8),
+    [TYPE_PSYCHIC]  = RGB2(31, 8, 24),
+    [TYPE_ICE]      = RGB2(14, 28, 31),
+    [TYPE_DRAGON]   = RGB2(12, 12, 31),
+    [TYPE_DARK]     = RGB2(14, 10, 16),
+};
+
 bool8 Gimmick_TryStartFormChange(u8 battler)
 {
-    u16 item, color, num, den;
-    bool8 fused, mega, dyna, zc;
+    u16 color, num;
+    u8 type;
+    bool8 fused, mega, dyna, zc, both;
 
     if (gBattleMons[battler].hp == 0)
         return FALSE;
     if (gBattleStruct->formChanged & gBitTable[battler])
         return FALSE; // once per battle per battler
 
-    item = HeldArtifact(battler);
+    // Consider both the real item slot AND the two items a fused mon stored.
+    mega = HasArtifact(battler, ITEM_MEGA_STONE);
+    dyna = HasArtifact(battler, ITEM_DYNA_BAND);
+    zc = HasArtifact(battler, ITEM_Z_CRYSTAL);
     fused = IsBattlerFused(battler);
-    mega = (item == ITEM_MEGA_STONE);
-    dyna = (item == ITEM_DYNA_BAND);
-    zc = (item == ITEM_Z_CRYSTAL);
+    both = mega && dyna; // a fused mon carrying both forms
     if (!mega && !dyna && !zc && !fused)
         return FALSE; // nothing to transform into
 
     gBattleStruct->formChanged |= gBitTable[battler];
 
-    // Huge boost to every stat. A fused mon channels BOTH forms at once, so it
-    // gets the biggest boost of all.
-    num = fused ? 5 : 2; // x2.5 fused, x2 otherwise
-    den = fused ? 2 : 1;
-    gBattleMons[battler].attack    = MultiplyStat(gBattleMons[battler].attack, num, den);
-    gBattleMons[battler].defense   = MultiplyStat(gBattleMons[battler].defense, num, den);
-    gBattleMons[battler].speed     = MultiplyStat(gBattleMons[battler].speed, num, den);
-    gBattleMons[battler].spAttack  = MultiplyStat(gBattleMons[battler].spAttack, num, den);
-    gBattleMons[battler].spDefense = MultiplyStat(gBattleMons[battler].spDefense, num, den);
+    // A fused mon that stored BOTH a Mega Stone and a Dyna Band gets the biggest
+    // boost of all (x3 every stat); anything else gets a huge x2.
+    num = both ? 3 : 2;
+    gBattleMons[battler].attack    = MultiplyStat(gBattleMons[battler].attack, num, 1);
+    gBattleMons[battler].defense   = MultiplyStat(gBattleMons[battler].defense, num, 1);
+    gBattleMons[battler].speed     = MultiplyStat(gBattleMons[battler].speed, num, 1);
+    gBattleMons[battler].spAttack  = MultiplyStat(gBattleMons[battler].spAttack, num, 1);
+    gBattleMons[battler].spDefense = MultiplyStat(gBattleMons[battler].spDefense, num, 1);
     // HP surge (heal only; maxHP unchanged so the health bar stays consistent).
     gBattleMons[battler].hp += gBattleMons[battler].maxHP / 2;
     if (gBattleMons[battler].hp > gBattleMons[battler].maxHP)
         gBattleMons[battler].hp = gBattleMons[battler].maxHP;
 
-    // "Cooler look": recolor the battler with a vivid form tint.
-    if (fused)      color = RGB2(31, 12, 31); // radiant magenta (both forms)
-    else if (mega)  color = RGB2(31, 26, 6);  // gold
-    else if (dyna)  color = RGB2(30, 6, 18);  // crimson
-    else            color = RGB2(10, 28, 31); // Z-Crystal cyan
-    BlendPalette(OBJ_PLTT_ID(battler), 16, 9, color);
+    // "Cooler look" recolor. The both-forms fusion gets a unique radiant
+    // white-gold double blend; every other form is tinted by the mon's type so
+    // each transformation looks different.
+    if (both)
+    {
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 6, RGB2(31, 31, 31)); // brighten
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 8, RGB2(31, 24, 12)); // radiant gold
+    }
+    else
+    {
+        type = gBattleMons[battler].type1;
+        color = (type < ARRAY_COUNT(sFormTypeColors)) ? sFormTypeColors[type] : RGB2(28, 20, 31);
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 9, color);
+    }
 
     PlaySE(SE_M_MEGA_KICK);
     return TRUE;

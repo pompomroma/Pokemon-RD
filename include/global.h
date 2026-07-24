@@ -795,9 +795,11 @@ struct FusionRecord
     u16 partnerSpecies;
     u8 partnerLevel;        // level the partner had when fused (for unfusing)
     u8 flags;
+    u16 baseItem;           // item the base mon held at fusion (restored on unfuse)
+    u16 partnerItem;        // item the absorbed partner held at fusion
 };
 
-#define FUSION_RECORDS_COUNT 24 // 24 * 16 = 384 bytes of former unused_348C space
+#define FUSION_RECORDS_COUNT 20 // 20 * 20 = 400 bytes (fusionRecords + former unused_348C)
 
 struct SaveBlock1
 {
@@ -849,8 +851,7 @@ struct SaveBlock1
     /*0x30D0*/ struct Roamer roamer;
     /*0x30EC*/ struct EnigmaBerry enigmaBerry;
     /*0x3120*/ struct MysteryGiftSave mysteryGift;
-    /*0x348C*/ struct FusionRecord fusionRecords[FUSION_RECORDS_COUNT];
-    /*0x360C*/ u8 unused_348C[16];
+    /*0x348C*/ struct FusionRecord fusionRecords[FUSION_RECORDS_COUNT]; // 20 * 20 = 0x190 -> 0x361C
     /*0x361C*/ struct RamScript ramScript;
     /*0x3A08*/ struct RecordMixingGift recordMixingGift; // unused
     /*0x3A18*/ u8 seen2[DEX_FLAGS_NO];
