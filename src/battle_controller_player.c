@@ -1412,17 +1412,32 @@ static void MoveSelectionDisplayPpNumber(void)
     BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_PP_REMAINING);
 }
 
+// Move damage-category tags (Gen-3 split is type-based). Kept short so the
+// "<TYPE> <CAT>" string still fits the 8-tile move-type window.
+static const u8 sText_MoveCatPhysical[] = _(" ATK");   // uses the Attack stat
+static const u8 sText_MoveCatSpecial[] = _(" SPA");    // uses the Sp. Atk stat
+
 static void MoveSelectionDisplayMoveType(void)
 {
     u8 *txtPtr;
+    u16 move;
+    u8 type;
     struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
 
-    txtPtr = StringCopy(gDisplayedStringBattle, gText_MoveInterfaceType);
+    move = moveInfo->moves[gMoveSelectionCursor[gActiveBattler]];
+    type = gBattleMoves[move].type;
+
+    // Show the move's TYPE and, for damaging moves, its category so the player
+    // can see whether it is based on Attack (physical) or Sp. Atk (special).
+    // The "TYPE/" label is dropped to make room for the category tag.
+    txtPtr = gDisplayedStringBattle;
     *txtPtr++ = EXT_CTRL_CODE_BEGIN;
     *txtPtr++ = 6;
     *txtPtr++ = 1;
     txtPtr = StringCopy(txtPtr, gText_MoveInterfaceDynamicColors);
-    StringCopy(txtPtr, gTypeNames[gBattleMoves[moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]].type]);
+    txtPtr = StringCopy(txtPtr, gTypeNames[type]);
+    if (gBattleMoves[move].power != 0)
+        txtPtr = StringCopy(txtPtr, IS_TYPE_PHYSICAL(type) ? sText_MoveCatPhysical : sText_MoveCatSpecial);
     BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_TYPE);
 }
 
