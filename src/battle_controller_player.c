@@ -1412,10 +1412,33 @@ static void MoveSelectionDisplayPpNumber(void)
     BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_PP_REMAINING);
 }
 
-// Move damage-category tags (Gen-3 split is type-based). Kept short so the
-// "<TYPE> <CAT>" string still fits the 8-tile move-type window.
-static const u8 sText_MoveCatPhysical[] = _(" ATK");   // uses the Attack stat
-static const u8 sText_MoveCatSpecial[] = _(" SPA");    // uses the Sp. Atk stat
+// Move-info tags for the 8-tile move-type window. For damaging moves we show
+// "<CAT> <xEFF>": the Attack/Sp.Atk category (Gen-3 type-based split) and the
+// move's type effectiveness against the opponent as a multiplier.
+static const u8 sText_MoveCatPhysical[] = _("ATK"); // uses the Attack stat
+static const u8 sText_MoveCatSpecial[]  = _("SPA"); // uses the Sp. Atk stat
+static const u8 sText_MoveStatus[]      = _("STATUS");
+static const u8 sText_Eff_x0[]          = _(" x0");   // no effect
+static const u8 sText_Eff_x025[]        = _(" x.25"); // not very (double resist)
+static const u8 sText_Eff_x05[]         = _(" x.5");  // not very
+static const u8 sText_Eff_x1[]          = _(" x1");   // effective (neutral)
+static const u8 sText_Eff_x2[]          = _(" x2");   // super effective
+static const u8 sText_Eff_x4[]          = _(" x4");   // extremely super effective
+
+// Type-chart multiplier (x10 scale: 0/5/10/20) of atkType vs defType. Scans only
+// the real (pre-Foresight) matchups; anything not listed is neutral (x1).
+static u16 MoveSelectionTypeMul(u8 atkType, u8 defType)
+{
+    s32 i = 0;
+
+    while (gTypeEffectiveness[i] != TYPE_FORESIGHT && gTypeEffectiveness[i] != TYPE_ENDTABLE)
+    {
+        if (gTypeEffectiveness[i] == atkType && gTypeEffectiveness[i + 1] == defType)
+            return gTypeEffectiveness[i + 2];
+        i += 3;
+    }
+    return TYPE_MUL_NORMAL;
+}
 
 static void MoveSelectionDisplayMoveType(void)
 {
@@ -1427,17 +1450,41 @@ static void MoveSelectionDisplayMoveType(void)
     move = moveInfo->moves[gMoveSelectionCursor[gActiveBattler]];
     type = gBattleMoves[move].type;
 
-    // Show the move's TYPE and, for damaging moves, its category so the player
-    // can see whether it is based on Attack (physical) or Sp. Atk (special).
-    // The "TYPE/" label is dropped to make room for the category tag.
     txtPtr = gDisplayedStringBattle;
     *txtPtr++ = EXT_CTRL_CODE_BEGIN;
     *txtPtr++ = 6;
     *txtPtr++ = 1;
     txtPtr = StringCopy(txtPtr, gText_MoveInterfaceDynamicColors);
-    txtPtr = StringCopy(txtPtr, gTypeNames[type]);
-    if (gBattleMoves[move].power != 0)
+
+    if (gBattleMoves[move].power == 0)
+    {
+        // Status moves deal no damage: no Attack/Sp.Atk stat, no effectiveness.
+        StringCopy(txtPtr, sText_MoveStatus);
+    }
+    else
+    {
+        u8 target = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
+        u16 m1, m2, total;
+        const u8 *effStr;
+
+        // Attack category: physical (Attack) vs special (Sp. Atk).
         txtPtr = StringCopy(txtPtr, IS_TYPE_PHYSICAL(type) ? sText_MoveCatPhysical : sText_MoveCatSpecial);
+
+        // Type effectiveness vs the opponent, from the type chart.
+        m1 = MoveSelectionTypeMul(type, gBattleMons[target].type1);
+        m2 = (gBattleMons[target].type2 != gBattleMons[target].type1)
+                 ? MoveSelectionTypeMul(type, gBattleMons[target].type2)
+                 : TYPE_MUL_NORMAL;
+        total = (m1 == 0 || m2 == 0) ? 0 : (m1 * m2 / 10);
+
+        if (total == 0)      effStr = sText_Eff_x0;   // not effective
+        else if (total < 5)  effStr = sText_Eff_x025; // not very (0.25x)
+        else if (total < 10) effStr = sText_Eff_x05;  // not very (0.5x)
+        else if (total < 20) effStr = sText_Eff_x1;   // effective (1x)
+        else if (total < 40) effStr = sText_Eff_x2;   // super (2x)
+        else                 effStr = sText_Eff_x4;   // extremely super (4x)
+        StringCopy(txtPtr, effStr);
+    }
     BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_TYPE);
 }
 
