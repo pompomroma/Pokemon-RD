@@ -14,4 +14,9 @@ bool8 Randomizer_IsActive(void);
 // the same (seed, species) always yields the same result.
 u16 GetRandomizedSpecies(u16 species);
 
+// Like GetRandomizedSpecies, but for the starter: returns a legendary the
+// overwhelming majority of the time (see STARTER_LEGENDARY_CHANCE). Deterministic
+// on (seed, species) so the shown starter and the gifted one always match.
+u16 GetRandomizedStarterSpecies(u16 species);
+
 #endif // GUARD_RANDOMIZER_H

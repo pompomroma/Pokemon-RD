@@ -1742,9 +1742,10 @@ bool8 ScrCmd_givemon(struct ScriptContext * ctx)
     u8 unkParam3;
     species = VarGet(ScriptReadHalfword(ctx));
     // In Randomizer mode the starter is a mystery: remap the very first gift
-    // (empty party) through the same stable species map as everything else.
+    // (empty party) through the starter map, which is heavily weighted toward
+    // legendaries. Must match the lab's display path (BufferRandomizedStarterSpecies).
     if (gSaveBlock1Ptr->playerPartyCount == 0)
-        species = GetRandomizedSpecies(species);
+        species = GetRandomizedStarterSpecies(species);
 #if REVISION >= 0xA
     // If the player party count is zero, this "must" be giving the starter.
     // Notify the emulator of what starter was picked, for telemetry purposes.

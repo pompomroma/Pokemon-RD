@@ -102,7 +102,7 @@ void ShowDiploma(void)
 // mode, so the shown Pokemon is exactly the one given.
 void BufferRandomizedStarterSpecies(void)
 {
-    VarSet(VAR_TEMP_5, GetRandomizedSpecies(VarGet(VAR_TEMP_2)));
+    VarSet(VAR_TEMP_5, GetRandomizedStarterSpecies(VarGet(VAR_TEMP_2)));
 }
 
 void ForcePlayerOntoBike(void)
