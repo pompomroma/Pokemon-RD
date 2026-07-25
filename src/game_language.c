@@ -24,6 +24,16 @@ extern const u8 Text_WelcomeWantToHealPkmn[];
 extern const u8 Text_TakeYourPkmnForFewSeconds[];
 extern const u8 Text_WeHopeToSeeYouAgain[];
 extern const u8 Text_RestoredPkmnToFullHealth[];
+extern const u8 PalletTown_ProfessorOaksLab_Text_OakThreeMonsChooseOne[];
+extern const u8 PalletTown_ProfessorOaksLab_Text_OakBePatientRival[];
+extern const u8 PalletTown_ProfessorOaksLab_Text_OakWhichOneWillYouChoose[];
+extern const u8 PalletTown_ProfessorOaksLab_Text_OakHeyDontGoAwayYet[];
+extern const u8 PalletTown_ProfessorOaksLab_Text_OakThisMonIsEnergetic[];
+extern const u8 PalletTown_ProfessorOaksLab_Text_ReceivedMonFromOak[];
+extern const u8 PalletTown_PlayersHouse_1F_Text_YouShouldTakeQuickRest[];
+extern const u8 PalletTown_PlayersHouse_1F_Text_LookingGreatTakeCare[];
+extern const u8 PalletTown_PlayersHouse_1F_Text_AllBoysLeaveOakLookingForYou[];
+extern const u8 PalletTown_PlayersHouse_1F_Text_AllGirlsLeaveOakLookingForYou[];
 
 struct TranslatedText
 {
@@ -51,6 +61,18 @@ static const struct TranslatedText sTranslatedText[] =
     { Text_TakeYourPkmnForFewSeconds,             sKorNurse_TakeYourPkmn },
     { Text_WeHopeToSeeYouAgain,                   sKorNurse_SeeYouAgain },
     { Text_RestoredPkmnToFullHealth,              sKorNurse_Restored },
+    // PROF. OAK's lab: being led in and given the first POKeMON
+    { PalletTown_ProfessorOaksLab_Text_OakThreeMonsChooseOne,     sKorLab_OakThreeMonsChooseOne },
+    { PalletTown_ProfessorOaksLab_Text_OakBePatientRival,         sKorLab_OakBePatientRival },
+    { PalletTown_ProfessorOaksLab_Text_OakWhichOneWillYouChoose,  sKorLab_OakWhichOneWillYouChoose },
+    { PalletTown_ProfessorOaksLab_Text_OakHeyDontGoAwayYet,       sKorLab_OakHeyDontGoAwayYet },
+    { PalletTown_ProfessorOaksLab_Text_OakThisMonIsEnergetic,     sKorLab_OakThisMonIsEnergetic },
+    { PalletTown_ProfessorOaksLab_Text_ReceivedMonFromOak,        sKorLab_ReceivedMonFromOak },
+    // MOM at home
+    { PalletTown_PlayersHouse_1F_Text_YouShouldTakeQuickRest,          sKorMom_TakeQuickRest },
+    { PalletTown_PlayersHouse_1F_Text_LookingGreatTakeCare,            sKorMom_LookingGreat },
+    { PalletTown_PlayersHouse_1F_Text_AllBoysLeaveOakLookingForYou,    sKorMom_AllBoysLeave },
+    { PalletTown_PlayersHouse_1F_Text_AllGirlsLeaveOakLookingForYou,   sKorMom_AllGirlsLeave },
 };
 
 // Returns the translation of `str` for the selected language, or `str` itself

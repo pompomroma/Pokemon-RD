@@ -5664,9 +5664,19 @@ static bool8 MovementAction_WalkSlowRight_Step1(struct ObjectEvent *objectEvent,
     return FALSE;
 }
 
+// Scripted walking (applymovement) is bike-fast while a cutscene has the field
+// controls locked, so sequences like OAK walking the player to his lab move at
+// the same brisk pace as the player's own bike-speed walking instead of the
+// original slow crawl. Outside cutscenes, normal walking is untouched, so
+// wandering NPCs still stroll at their usual speed.
+static u8 NormalWalkSpeed(void)
+{
+    return ArePlayerFieldControlsLocked() ? MOVE_SPEED_FAST_2 : MOVE_SPEED_NORMAL;
+}
+
 static bool8 MovementAction_WalkNormalDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    InitMovementNormal(objectEvent, sprite, DIR_SOUTH, MOVE_SPEED_NORMAL);
+    InitMovementNormal(objectEvent, sprite, DIR_SOUTH, NormalWalkSpeed());
     return MovementAction_WalkNormalDown_Step1(objectEvent, sprite);
 }
 
@@ -5682,7 +5692,7 @@ static bool8 MovementAction_WalkNormalDown_Step1(struct ObjectEvent *objectEvent
 
 static bool8 MovementAction_WalkNormalUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    InitMovementNormal(objectEvent, sprite, DIR_NORTH, MOVE_SPEED_NORMAL);
+    InitMovementNormal(objectEvent, sprite, DIR_NORTH, NormalWalkSpeed());
     return MovementAction_WalkNormalUp_Step1(objectEvent, sprite);
 }
 
@@ -5698,7 +5708,7 @@ static bool8 MovementAction_WalkNormalUp_Step1(struct ObjectEvent *objectEvent, 
 
 static bool8 MovementAction_WalkNormalLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    InitMovementNormal(objectEvent, sprite, DIR_WEST, MOVE_SPEED_NORMAL);
+    InitMovementNormal(objectEvent, sprite, DIR_WEST, NormalWalkSpeed());
     return MovementAction_WalkNormalLeft_Step1(objectEvent, sprite);
 }
 
@@ -5714,7 +5724,7 @@ static bool8 MovementAction_WalkNormalLeft_Step1(struct ObjectEvent *objectEvent
 
 static bool8 MovementAction_WalkNormalRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite)
 {
-    InitMovementNormal(objectEvent, sprite, DIR_EAST, MOVE_SPEED_NORMAL);
+    InitMovementNormal(objectEvent, sprite, DIR_EAST, NormalWalkSpeed());
     return MovementAction_WalkNormalRight_Step1(objectEvent, sprite);
 }
 

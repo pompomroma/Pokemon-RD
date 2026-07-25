@@ -83,12 +83,49 @@ DIALOGUE = {
     "sKorNurse_Restored":
         "기다려 주셔서 감사합니다.\\n"
         "포켓몬을 완전히\\l회복시켰습니다.",
+
+    # PROF. OAK's lab -- the scene where the player is led in and given their
+    # first POKeMON, plus MOM at home.
+    "sKorLab_OakThreeMonsChooseOne":
+        "오박사: {RIVAL}?\\n어디 보자…\\p"
+        "아, 그렇지. 오라고\\n했었지! 잠깐 기다리렴!\\p"
+        "여기다, {PLAYER}.\\p"
+        "포켓몬이 세 마리 있단다.\\p"
+        "하하!\\p"
+        "포켓몬은 이 몬스터볼\\n안에 들어 있지.\\p"
+        "나도 젊었을 때는\\n진지한 트레이너였단다.\\p"
+        "지금은 나이가 들어\\n이 세 마리만 남았어.\\p"
+        "하나를 가지렴.\\n자, 골라 보거라!",
+    "sKorLab_OakBePatientRival":
+        "오박사: 조금만 기다리렴,\\n{RIVAL}. 너도 하나 주마!",
+    "sKorLab_OakWhichOneWillYouChoose":
+        "오박사: 자, {PLAYER}.\\p"
+        "저 세 개의 몬스터볼 안에\\n포켓몬이 들어 있단다.\\p"
+        "어느 쪽을 고르겠니?",
+    "sKorLab_OakHeyDontGoAwayYet":
+        "오박사: 이런!\\n아직 가면 안 된다!",
+    "sKorLab_OakThisMonIsEnergetic":
+        "이 포켓몬은 정말\\n활기가 넘치는구나!",
+    "sKorLab_ReceivedMonFromOak":
+        "{PLAYER}은 오박사에게서\\n{STR_VAR_1}을 받았다!",
+
+    "sKorMom_TakeQuickRest":
+        "엄마: {PLAYER}!\\n잠깐 쉬어 가는 게 좋겠다.",
+    "sKorMom_LookingGreat":
+        "엄마: 아, 좋아!\\n너도 포켓몬도 건강해 보여.\\l조심해서 다녀오렴!",
+    "sKorMom_AllBoysLeave":
+        "엄마: …그래.\\n남자아이는 언젠가\\l집을 떠나는 법이지.\\p"
+        "아 참. 옆집 오박사님이\\n너를 찾고 계셨단다.",
+    "sKorMom_AllGirlsLeave":
+        "엄마: …그래.\\n여자아이도 언젠가\\l여행을 꿈꾸는 법이지.\\p"
+        "아 참. 옆집 오박사님이\\n너를 찾고 계셨단다.",
 }
 
 # Non-Hangul bytes, taken from charmap.txt.
-PUNCT = {' ': 0x00, '!': 0xAB, '?': 0xAC, '.': 0xAD, '…': 0xB0, ',': 0xB8}
+PUNCT = {' ': 0x00, '!': 0xAB, '?': 0xAC, '.': 0xAD, '…': 0xB0, ',': 0xB8, ':': 0xF0}
 MARKUP = [("\\n", [0xFE]), ("\\l", [0xFA]), ("\\p", [0xFB]),
-          ("{PLAYER}", [0xFD, 0x01]), ("{RIVAL}", [0xFD, 0x06])]
+          ("{PLAYER}", [0xFD, 0x01]), ("{RIVAL}", [0xFD, 0x06]),
+          ("{STR_VAR_1}", [0xFD, 0x02]), ("{STR_VAR_2}", [0xFD, 0x03])]
 
 def is_hangul(ch):
     return '가' <= ch <= '힣'
