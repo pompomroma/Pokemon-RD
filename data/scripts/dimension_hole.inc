@@ -21,3 +21,17 @@ DimensionHole_EventScript_EnterDynamax::
 	warp MAP_DYNAMAX_HOLE, 0
 	waitstate
 	end
+
+@ Rolled from each hosting map's ON_TRANSITION: a dimensional hole (a physical
+@ overworld entrance) appears there roughly 1 in 3 visits, so holes "spawn in
+@ random places" as you travel. FLAG_WONDER_CARD_UNUSED_1 is the shared hide
+@ flag for every overworld hole entrance (they're never all loaded at once).
+DimensionHole_EventScript_RollSpawn::
+	random 3
+	goto_if_eq VAR_RESULT, 0, DimensionHole_EventScript_ShowHole
+	setflag FLAG_WONDER_CARD_UNUSED_1
+	return
+
+DimensionHole_EventScript_ShowHole::
+	clearflag FLAG_WONDER_CARD_UNUSED_1
+	return

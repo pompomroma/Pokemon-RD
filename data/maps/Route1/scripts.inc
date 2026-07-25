@@ -1,5 +1,10 @@
 Route1_MapScripts::
+	map_script MAP_SCRIPT_ON_TRANSITION, Route1_OnTransition
 	.byte 0
+
+Route1_OnTransition::
+	call DimensionHole_EventScript_RollSpawn
+	end
 
 Route1_EventScript_MartClerk::
 	lock
