@@ -82,6 +82,59 @@ controls of this hack are easy to reach.
    they're the ones most often left blank, and this hack uses them for Z-Moves
    (either one works).
 
+> **If A and B do nothing — see the fix directly below.** This is the single most
+> common Manic EMU keyboard problem and it is a mapping/iOS issue, not a game bug.
+
+---
+
+## FIX: "A and B buttons don't work" (Manic EMU / iOS keyboards)
+
+The game cannot tell a keyboard from a gamepad — it only ever receives the GBA's
+10 buttons. So when A and B do nothing but the D-pad works, the A/B **bindings**
+are not reaching the emulator. Work through these in order:
+
+**1. Re-bind A and B to plain letter keys.**
+The usual cause is that A/B are bound to keys **iOS itself swallows**. Never bind
+A or B to `Space`, `Enter`/`Return`, `Tab`, `Esc`, arrow keys, or anything with
+`Cmd`. Use plain letters:
+- **A → `X`**, **B → `Z`** (or A → `K`, B → `J`).
+
+Open the keyboard/controller profile, clear the old A and B bindings, then set
+them fresh to those letters.
+
+**2. Turn OFF iOS Full Keyboard Access.**
+`iOS Settings → Accessibility → Keyboards → Full Keyboard Access → OFF`.
+When this is on, iOS intercepts keys for interface navigation and the emulator
+never receives them — this alone can kill A/B.
+
+**3. Make sure the keyboard is being used as a *controller*, not text input.**
+In Manic EMU look for **External Controller / Hardware Keyboard / Controller**
+and confirm your keyboard is selected there and the profile is **enabled** for
+the GBA core. If the keyboard is only registered as a text device, letters do
+nothing in-game.
+
+**4. Check for a duplicate/conflicting binding.**
+If the key you assigned to A is *also* assigned to an emulator hotkey (menu,
+fast-forward, save state) or to another GBA button, the emulator can swallow it.
+Each key should appear exactly once in the whole profile.
+
+**5. Re-seat the keyboard.**
+Disconnect/reconnect the Bluetooth keyboard (or toggle Bluetooth), then reopen
+the game. iOS sometimes attaches a keyboard *after* the emulator has started and
+the emulator doesn't pick it up until relaunch.
+
+**6. Verify with the on-screen buttons.**
+Tap the on-screen A and B once. If those work, the game and ROM are fine and the
+problem is purely the keyboard profile — repeat step 1.
+
+### You are not locked out of the game meanwhile
+The boot **language screen accepts A, B *or* START**, and the title screen accepts
+the same three. So even with A and B unmapped you can always reach the game with
+**START** and open **OPTIONS** to adjust controls.
+
+You can also set **OPTIONS → BUTTON MODE → L=A**, which makes the **L** button act
+as **A** — a working substitute if your A key can't be bound at all.
+
 ### Lemuroid (Android)
 1. Connect the keyboard.
 2. **Settings → Gamepad / Input settings → (your keyboard) → Edit bindings**.

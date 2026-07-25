@@ -62,7 +62,7 @@ static const u8 *const sLanguageNames[GAME_LANG_COUNT] =
 };
 
 static const u8 sText_SelectLanguage[] = _("SELECT LANGUAGE");
-static const u8 sText_Footer[] = _("{DPAD_UPDOWN}CHOOSE  {A_BUTTON}OK");
+static const u8 sText_Footer[] = _("{DPAD_UPDOWN}CHOOSE  {A_BUTTON}{B_BUTTON}{START_BUTTON}OK");
 
 static const u16 sLangSelectPalette[] = INCBIN_U16("graphics/misc/option_menu.gbapal");
 static const u8 sFooterTextColor[] = {TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY};
@@ -333,7 +333,11 @@ static void Task_LanguageSelect(u8 taskId)
             PlaySE(SE_SELECT);
             UpdateLangSelectHighlight(sLangSelectPtr->cursorPos);
         }
-        else if (JOY_NEW(A_BUTTON))
+        // Confirm on A, B or START -- the same set the title screen accepts.
+        // This screen is the first gate at boot, so accepting only one button
+        // would strand a player whose A key is unmapped in their emulator
+        // (common with external keyboards) before they can reach any menu.
+        else if (JOY_NEW(A_BUTTON | B_BUTTON | START_BUTTON))
         {
             PlaySE(SE_SELECT);
             gSaveBlock2Ptr->optionsLanguage = sLangSelectPtr->cursorPos;
