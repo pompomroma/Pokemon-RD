@@ -139,6 +139,51 @@ void CreateScriptedWildMon(u16 species, u8 level, u16 item)
     }
 }
 
+// Rebuilds the scripted wild Pokemon at the player's own level. The dungeon
+// bosses (ULTRA HOLE / DYNAMAX HOLE) call this right after setwildbattle, so a
+// hole entered early gives a level-appropriate fight instead of a fixed level 50
+// or 60 wall, and one entered late still matches a maxed party. The level used is
+// the highest in the party, so the boss is never trivially under-levelled.
+// Highest level in the player's party (eggs skipped), floored at 5.
+static u8 GetPlayerPartyTopLevel(void)
+{
+    u8 level = 5;
+    u8 i;
+
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        u8 monLevel;
+
+        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL) == SPECIES_NONE)
+            continue;
+        if (GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG, NULL))
+            continue;
+        monLevel = GetMonData(&gPlayerParty[i], MON_DATA_LEVEL, NULL);
+        if (monLevel > level)
+            level = monLevel;
+    }
+    if (level > MAX_LEVEL)
+        level = MAX_LEVEL;
+    return level;
+}
+
+void ScaleWildMonToPlayerLevel(void)
+{
+    u16 species = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES, NULL);
+    u16 item = GetMonData(&gEnemyParty[0], MON_DATA_HELD_ITEM, NULL);
+
+    CreateScriptedWildMon(species, GetPlayerPartyTopLevel(), item);
+}
+
+// Hands over a defeated dungeon boss at the same level it was fought at, so the
+// Pokemon you receive matches the one you just beat. VAR_0x8008 holds the
+// species and VAR_0x8009 the held item (givemon takes its level as a literal
+// byte, so it cannot scale on its own).
+void GiveDungeonMonAtPlayerLevel(void)
+{
+    ScriptGiveMon(VarGet(VAR_0x8008), GetPlayerPartyTopLevel(), VarGet(VAR_0x8009), 0, 0, 0);
+}
+
 void ScriptSetMonMoveSlot(u8 monIndex, u16 move, u8 slot)
 {
     if (monIndex > PARTY_SIZE)

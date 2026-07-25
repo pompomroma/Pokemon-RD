@@ -9,14 +9,16 @@ DynamaxHole_EventScript_Lugia::
 	setvar VAR_0x8008, SPECIES_LUGIA
 	call DynamaxHole_EventScript_Challenge
 	setwildbattle SPECIES_LUGIA, 60
+	special ScaleWildMonToPlayerLevel
 	call DynamaxHole_EventScript_RunBattle
 	goto_if_eq VAR_RESULT, B_OUTCOME_WON, DynamaxHole_EventScript_CaughtLugia
 	release
 	end
 
 DynamaxHole_EventScript_CaughtLugia::
-	givemon SPECIES_LUGIA, 60, ITEM_DYNA_BAND
 	setvar VAR_0x8008, SPECIES_LUGIA
+	setvar VAR_0x8009, ITEM_DYNA_BAND
+	special GiveDungeonMonAtPlayerLevel
 	goto DynamaxHole_EventScript_Obtained
 	end
 
@@ -24,14 +26,16 @@ DynamaxHole_EventScript_HoOh::
 	setvar VAR_0x8008, SPECIES_HO_OH
 	call DynamaxHole_EventScript_Challenge
 	setwildbattle SPECIES_HO_OH, 60
+	special ScaleWildMonToPlayerLevel
 	call DynamaxHole_EventScript_RunBattle
 	goto_if_eq VAR_RESULT, B_OUTCOME_WON, DynamaxHole_EventScript_CaughtHoOh
 	release
 	end
 
 DynamaxHole_EventScript_CaughtHoOh::
-	givemon SPECIES_HO_OH, 60, ITEM_DYNA_BAND
 	setvar VAR_0x8008, SPECIES_HO_OH
+	setvar VAR_0x8009, ITEM_DYNA_BAND
+	special GiveDungeonMonAtPlayerLevel
 	goto DynamaxHole_EventScript_Obtained
 	end
 
@@ -39,14 +43,16 @@ DynamaxHole_EventScript_Suicune::
 	setvar VAR_0x8008, SPECIES_SUICUNE
 	call DynamaxHole_EventScript_Challenge
 	setwildbattle SPECIES_SUICUNE, 60
+	special ScaleWildMonToPlayerLevel
 	call DynamaxHole_EventScript_RunBattle
 	goto_if_eq VAR_RESULT, B_OUTCOME_WON, DynamaxHole_EventScript_CaughtSuicune
 	release
 	end
 
 DynamaxHole_EventScript_CaughtSuicune::
-	givemon SPECIES_SUICUNE, 60, ITEM_DYNA_BAND
 	setvar VAR_0x8008, SPECIES_SUICUNE
+	setvar VAR_0x8009, ITEM_DYNA_BAND
+	special GiveDungeonMonAtPlayerLevel
 	goto DynamaxHole_EventScript_Obtained
 	end
 

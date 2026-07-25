@@ -19,4 +19,9 @@ u16 GetRandomizedSpecies(u16 species);
 // on (seed, species) so the shown starter and the gifted one always match.
 u16 GetRandomizedStarterSpecies(u16 species);
 
+// Wild encounters: usually returns `species`, but a set percentage of the time
+// swaps in a random legendary. NOT gated on randomizer mode -- legendaries roam
+// the wild in every save, at the encounter slot's own level.
+u16 Wild_ApplyLegendaryChance(u16 species);
+
 #endif // GUARD_RANDOMIZER_H

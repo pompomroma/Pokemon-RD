@@ -454,4 +454,6 @@ gSpecials::
 	def_special CreateEnemyEventMon
 	def_special BufferRandomizedStarterSpecies
 	def_special SaveHoleReturnWarp
+	def_special ScaleWildMonToPlayerLevel
+	def_special GiveDungeonMonAtPlayerLevel
 gSpecialsEnd::

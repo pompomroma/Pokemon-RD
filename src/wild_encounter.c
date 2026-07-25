@@ -230,6 +230,7 @@ static void GenerateWildMon(u16 species, u8 level, u8 slot)
     s8 chamber;
     ZeroEnemyPartyMons();
     species = GetRandomizedSpecies(species); // no-op unless randomizer is on
+    species = Wild_ApplyLegendaryChance(species); // legendaries roam the wild
     if (species != SPECIES_UNOWN)
     {
         CreateMonWithNature(&gEnemyParty[0], species, level, USE_RANDOM_IVS, Random() % NUM_NATURES);

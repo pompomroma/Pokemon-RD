@@ -9572,6 +9572,11 @@ static void Cmd_handleballthrow(void)
             }
         }
 
+        // Worn down to half HP or less, the wild Pokemon is always caught --
+        // rewarding actually battling it instead of ball-spamming at full HP.
+        if (gBattleMons[gBattlerTarget].hp * 2 <= gBattleMons[gBattlerTarget].maxHP)
+            odds = 255;
+
         if (odds > 254) // mon caught
         {
             BtlController_EmitBallThrowAnim(BUFFER_A, BALL_3_SHAKES_SUCCESS);

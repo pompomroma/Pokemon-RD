@@ -59,6 +59,24 @@ static const u16 sLegendaryStarters[] =
 // from the ~5% a uniform pick would give).
 #define STARTER_LEGENDARY_CHANCE 90
 
+// Percentage of wild encounters replaced by a legendary. Unlike the rest of this
+// file this is NOT gated on randomizer mode -- legendaries roam the wild in every
+// save. They keep the encounter slot's own level, so one met on an early route is
+// still a fair fight (and catchable) rather than an instant wall.
+#define WILD_LEGENDARY_CHANCE 25
+
+// Rolls a wild encounter's species: usually the species the map asked for, but
+// WILD_LEGENDARY_CHANCE of the time a random legendary instead. Uses the live RNG
+// (not the seeded hash) so every encounter is an independent roll.
+u16 Wild_ApplyLegendaryChance(u16 species)
+{
+    if (species == SPECIES_NONE || species >= SPECIES_EGG)
+        return species;
+    if ((Random() % 100) >= WILD_LEGENDARY_CHANCE)
+        return species;
+    return sLegendaryStarters[Random() % ARRAY_COUNT(sLegendaryStarters)];
+}
+
 // Starter-specific remap: with STARTER_LEGENDARY_CHANCE it returns a legendary,
 // otherwise it falls back to the ordinary any-species remap. Deterministic on
 // (seed, species) like GetRandomizedSpecies, so the lab's shown Pokemon and the

@@ -9,14 +9,16 @@ UltraHole_EventScript_Articuno::
 	setvar VAR_0x8008, SPECIES_ARTICUNO
 	call UltraHole_EventScript_Challenge
 	setwildbattle SPECIES_ARTICUNO, 50
+	special ScaleWildMonToPlayerLevel
 	call UltraHole_EventScript_RunBattle
 	goto_if_eq VAR_RESULT, B_OUTCOME_WON, UltraHole_EventScript_CaughtArticuno
 	release
 	end
 
 UltraHole_EventScript_CaughtArticuno::
-	givemon SPECIES_ARTICUNO, 50, ITEM_Z_CRYSTAL
 	setvar VAR_0x8008, SPECIES_ARTICUNO
+	setvar VAR_0x8009, ITEM_Z_CRYSTAL
+	special GiveDungeonMonAtPlayerLevel
 	goto UltraHole_EventScript_Obtained
 	end
 
@@ -24,14 +26,16 @@ UltraHole_EventScript_Zapdos::
 	setvar VAR_0x8008, SPECIES_ZAPDOS
 	call UltraHole_EventScript_Challenge
 	setwildbattle SPECIES_ZAPDOS, 50
+	special ScaleWildMonToPlayerLevel
 	call UltraHole_EventScript_RunBattle
 	goto_if_eq VAR_RESULT, B_OUTCOME_WON, UltraHole_EventScript_CaughtZapdos
 	release
 	end
 
 UltraHole_EventScript_CaughtZapdos::
-	givemon SPECIES_ZAPDOS, 50, ITEM_Z_CRYSTAL
 	setvar VAR_0x8008, SPECIES_ZAPDOS
+	setvar VAR_0x8009, ITEM_Z_CRYSTAL
+	special GiveDungeonMonAtPlayerLevel
 	goto UltraHole_EventScript_Obtained
 	end
 
@@ -39,14 +43,16 @@ UltraHole_EventScript_Moltres::
 	setvar VAR_0x8008, SPECIES_MOLTRES
 	call UltraHole_EventScript_Challenge
 	setwildbattle SPECIES_MOLTRES, 50
+	special ScaleWildMonToPlayerLevel
 	call UltraHole_EventScript_RunBattle
 	goto_if_eq VAR_RESULT, B_OUTCOME_WON, UltraHole_EventScript_CaughtMoltres
 	release
 	end
 
 UltraHole_EventScript_CaughtMoltres::
-	givemon SPECIES_MOLTRES, 50, ITEM_Z_CRYSTAL
 	setvar VAR_0x8008, SPECIES_MOLTRES
+	setvar VAR_0x8009, ITEM_Z_CRYSTAL
+	special GiveDungeonMonAtPlayerLevel
 	goto UltraHole_EventScript_Obtained
 	end
 
