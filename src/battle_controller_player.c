@@ -436,6 +436,74 @@ static void HandleInputChooseTarget(void)
     }
 }
 
+// The Z-MOVE 5th slot. When a mon holds a usable Z Crystal, a fifth selectable
+// option sits to the right of the 2x2 move grid: the mon's type-based Z-Move.
+// It is a genuine cursor position, but the underlying gMoveSelectionCursor is
+// left in 0..3 (a "focus" flag tracks the Z slot) so none of the move-index code
+// can ever run out of bounds. Choosing it fires the mon's signature damaging
+// move, supercharged into its Z-Move.
+static bool8 sZSlotActive[MAX_BATTLERS_COUNT];
+
+// Index (0..3) of the move the Z-Move rides on: the first damaging move.
+static u8 ZSlotBaseMove(struct ChooseMoveStruct *moveInfo)
+{
+    u8 i;
+
+    for (i = 0; i < MAX_MON_MOVES; ++i)
+        if (moveInfo->moves[i] != MOVE_NONE && gBattleMoves[moveInfo->moves[i]].power > 0)
+            return i;
+    return 0;
+}
+
+static bool8 ZSlotAvailable(struct ChooseMoveStruct *moveInfo)
+{
+    return Gimmick_CanArmZMove(gActiveBattler, moveInfo->moves[ZSlotBaseMove(moveInfo)]);
+}
+
+// The Z slot's own cursor, drawn just left of the move-info window.
+static void ZSlotCursor(bool8 show)
+{
+    u16 src[2];
+
+    src[0] = show ? 1 : 32;
+    src[1] = show ? 2 : 32;
+    CopyToBgTilemapBufferRect_ChangePalette(0, src, 20, 57, 1, 2, 0x11);
+    CopyBgTilemapBufferToVram(0);
+}
+
+static void DisplayZSlotName(struct ChooseMoveStruct *moveInfo)
+{
+    u8 *txtPtr = gDisplayedStringBattle;
+    u16 move = moveInfo->moves[ZSlotBaseMove(moveInfo)];
+
+    *txtPtr++ = EXT_CTRL_CODE_BEGIN;
+    *txtPtr++ = 6;
+    *txtPtr++ = 1;
+    txtPtr = StringCopy(txtPtr, gText_MoveInterfaceDynamicColors);
+    *txtPtr++ = CHAR_Z;
+    *txtPtr++ = CHAR_HYPHEN;
+    StringCopy(txtPtr, gMoveNames[move]);
+    BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_TYPE);
+}
+
+static void EnterZSlot(struct ChooseMoveStruct *moveInfo)
+{
+    PlaySE(SE_SELECT);
+    MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
+    sZSlotActive[gActiveBattler] = TRUE;
+    DisplayZSlotName(moveInfo);
+    ZSlotCursor(TRUE);
+}
+
+static void ExitZSlot(void)
+{
+    ZSlotCursor(FALSE);
+    sZSlotActive[gActiveBattler] = FALSE;
+    MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+    MoveSelectionDisplayPpNumber();
+    MoveSelectionDisplayMoveType();
+}
+
 void HandleInputChooseMove(void)
 {
     bool32 canSelectTarget = FALSE;
@@ -450,28 +518,40 @@ void HandleInputChooseMove(void)
             MoveSelectionDisplayMoveType();
         return;
     }
-    // R charges the held Z Crystal: the highlighted damaging move becomes the
-    // mon's Z-Move (a distinct, per-type, once-per-battle super-move). R again
-    // cancels. The move-info window shows a "Z:" tag while armed.
-    if (JOY_NEW(R_BUTTON))
+    // Z-MOVE 5th slot. When focused, A unleashes it (arm + point the cursor at
+    // its vehicle move, then fall through to the normal confirm so targeting is
+    // handled as usual); DPAD-left / B / R leave the slot. R (when not focused)
+    // jumps to the slot if a usable Z Crystal is held; DPAD-right from the right
+    // column also reaches it.
+    if (sZSlotActive[gActiveBattler])
     {
-        u16 hlMove = moveInfo->moves[gMoveSelectionCursor[gActiveBattler]];
-
-        if (Gimmick_CanArmZMove(gActiveBattler, hlMove))
+        if (JOY_NEW(A_BUTTON))
         {
-            if (Gimmick_ToggleArmZMove(gActiveBattler))
-            {
-                // Z-charge "cutscene": a radiant gold flash over the mon + a
-                // dramatic sound, in the spirit of the Sun/Moon Z-Power ritual.
-                BlendPalette(OBJ_PLTT_ID(gActiveBattler), 16, 10, RGB(31, 28, 8));
-                PlaySE(SE_M_MEGA_KICK);
-            }
-            else
+            u8 base = ZSlotBaseMove(moveInfo);
+
+            ZSlotCursor(FALSE);
+            gBattleStruct->zMoveArmed |= gBitTable[gActiveBattler];
+            gMoveSelectionCursor[gActiveBattler] = base;
+            sZSlotActive[gActiveBattler] = FALSE;
+            // Z-charge "cutscene": a radiant gold flash over the mon.
+            BlendPalette(OBJ_PLTT_ID(gActiveBattler), 16, 10, RGB(31, 28, 8));
+            PlaySE(SE_M_MEGA_KICK);
+            // fall through to the A_BUTTON handler below to fire it
+        }
+        else
+        {
+            if (JOY_NEW(DPAD_LEFT | B_BUTTON | R_BUTTON))
             {
                 PlaySE(SE_SELECT);
+                ExitZSlot();
             }
-            MoveSelectionDisplayMoveType();
+            return;
         }
+    }
+    else if (JOY_NEW(R_BUTTON))
+    {
+        if (ZSlotAvailable(moveInfo))
+            EnterZSlot(moveInfo);
         return;
     }
     if (JOY_NEW(A_BUTTON))
@@ -568,6 +648,10 @@ void HandleInputChooseMove(void)
             MoveSelectionDisplayPpNumber();
             MoveSelectionDisplayMoveType();
             BeginNormalPaletteFade(0xF0000, 0, 0, 0, RGB_WHITE);
+        }
+        else if (ZSlotAvailable(moveInfo)) // right edge -> the Z-MOVE 5th slot
+        {
+            EnterZSlot(moveInfo);
         }
     }
     else if (JOY_NEW(DPAD_UP))
@@ -1488,14 +1572,6 @@ static void MoveSelectionDisplayMoveType(void)
     *txtPtr++ = 6;
     *txtPtr++ = 1;
     txtPtr = StringCopy(txtPtr, gText_MoveInterfaceDynamicColors);
-
-    // When the player has armed the Z-Move (R), tag the move info so it's clear
-    // the next move fires as the Z-Move.
-    if (Gimmick_IsZMoveArmed(gActiveBattler))
-    {
-        *txtPtr++ = CHAR_Z;
-        *txtPtr++ = CHAR_COLON;
-    }
 
     if (gBattleMoves[move].power == 0)
     {
@@ -2555,6 +2631,7 @@ static void PlayerHandleChooseMove(void)
 
 void InitMoveSelectionsVarsAndStrings(void)
 {
+    sZSlotActive[gActiveBattler] = FALSE; // start on the normal move grid
     MoveSelectionDisplayMoveNames();
     gMultiUsePlayerCursor = 0xFF;
     MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
