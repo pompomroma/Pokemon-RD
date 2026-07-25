@@ -145,7 +145,7 @@ static const struct BgTemplate sOptionMenuBgTemplates[] =
 };
 
 static const u16 sOptionMenuPalette[] = INCBIN_U16("graphics/misc/option_menu.gbapal");
-static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 2, 1, 0};
+static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 4, 1, 0};
 
 // Co-op code row strings.
 static const u8 sText_CoopCode_En[] = _("CO-OP CODE");
@@ -158,6 +158,7 @@ static const u16 sCoopPow10[4] = {1000, 100, 10, 1};
 // Defined in graphics/fonts/korean_glyphs so the strings resolve to the
 // extra-symbol escapes for their syllables.
 #include "korean_ui_strings.h"
+#include "langselect_strings.h"
 
 static const u8 sText_Language_En[] = _("LANGUAGE");
 
@@ -192,7 +193,9 @@ static const u8 sText_LangEnglish[] = _("ENGLISH");
 static const u8 *const sLanguageOptions[] =
 {
     sText_LangEnglish,
-    sKorText_Korean, // "한국어" in baked Hangul
+    sKorText_Korean,   // "한국어" in baked Hangul
+    sLangText_Japanese, // "日本語" in baked kanji
+    sLangText_Chinese,  // "中文" in baked hanzi
 };
 
 // Localized value labels (each falls back to English via GetLangString).

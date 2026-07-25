@@ -11,6 +11,7 @@
 #include "save.h"
 #include "new_game.h"
 #include "title_screen.h"
+#include "language_select.h"
 #include "decompress.h"
 #include "util.h"
 #include "trig.h"
@@ -1939,7 +1940,8 @@ static void IntroCB_ExitToTitleScreen(struct IntroSequenceData * this)
             Free(this);
             DisableInterrupts(INTR_FLAG_HBLANK);
             SetHBlankCallback(NULL);
-            SetMainCallback2(CB2_InitTitleScreen);
+            // Choose the game language before the title screen / gameplay.
+            SetMainCallback2(CB2_InitLanguageSelect);
         }
         break;
     }
