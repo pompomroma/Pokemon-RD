@@ -508,6 +508,12 @@ void HandleInputChooseMove(void)
 {
     bool32 canSelectTarget = FALSE;
     struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
+    // The Z-MOVE slot is reached with R, or with L as an equally valid alternative
+    // (shoulder keys are the most awkward to reach on phone/keyboard layouts, so
+    // either one works). Skipped for L when BUTTON MODE is L=A, where L is already
+    // acting as the A button.
+    bool32 zSlotKey = JOY_NEW(R_BUTTON)
+                   || (JOY_NEW(L_BUTTON) && gSaveBlock2Ptr->optionsButtonMode != OPTIONS_BUTTON_MODE_L_EQUALS_A);
 
     PreviewDeterminativeMoveTargets();
     // START triggers the once-per-battle "form change" (Mega/Dynamax/Gigantamax,
@@ -540,7 +546,7 @@ void HandleInputChooseMove(void)
         }
         else
         {
-            if (JOY_NEW(DPAD_LEFT | B_BUTTON | R_BUTTON))
+            if (JOY_NEW(DPAD_LEFT | B_BUTTON) || zSlotKey)
             {
                 PlaySE(SE_SELECT);
                 ExitZSlot();
@@ -548,7 +554,7 @@ void HandleInputChooseMove(void)
             return;
         }
     }
-    else if (JOY_NEW(R_BUTTON))
+    else if (zSlotKey)
     {
         if (ZSlotAvailable(moveInfo))
             EnterZSlot(moveInfo);
