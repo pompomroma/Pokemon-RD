@@ -1,5 +1,6 @@
 #include "global.h"
 #include "field_message_box.h"
+#include "game_language.h"
 #include "gflib.h"
 #include "new_menu_helpers.h"
 #include "quest_log.h"
@@ -102,7 +103,10 @@ static bool8 ShowFieldMessageFromBuffer(void)
 
 static void ExpandStringAndStartDrawFieldMessageBox(const u8 *str)
 {
-    StringExpandPlaceholders(gStringVar4, str);
+    // Every NPC/sign msgbox funnels through here, so this is where baked
+    // dialogue is swapped for the selected language (no-op in English or for
+    // lines that have no translation).
+    StringExpandPlaceholders(gStringVar4, GameText_Localize(str));
     AddTextPrinterDiffStyle(TRUE);
     CreateTask_DrawFieldMessageBox();
 }

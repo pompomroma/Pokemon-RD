@@ -17,4 +17,10 @@
 // but no full string translation, so they read as English in game text.)
 const u8 *GetLangString(const u8 *en, const u8 *ko);
 
+// Translates a piece of baked dialogue (NPC msgbox text, Oak's opening speech)
+// for the selected language. Returns the string unchanged when the language is
+// English or the line has no translation, so it is safe to wrap any text
+// pointer on its way to the screen.
+const u8 *GameText_Localize(const u8 *str);
+
 #endif // GUARD_GAME_LANGUAGE_H

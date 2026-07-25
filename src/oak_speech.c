@@ -11,6 +11,7 @@
 #include "scanline_effect.h"
 #include "pokeball.h"
 #include "naming_screen.h"
+#include "game_language.h"
 #include "math_util.h"
 #include "overworld.h"
 #include "random.h"
@@ -1129,7 +1130,7 @@ static void Task_OakSpeech_Init(u8 taskId)
     DrawDialogueFrame(WIN_INTRO_TEXTBOX, FALSE);                                                                                                             \
     if (str != gStringVar4)                                                                                                                                  \
     {                                                                                                                                                        \
-        StringExpandPlaceholders(gStringVar4, str);                                                                                                          \
+        StringExpandPlaceholders(gStringVar4, GameText_Localize(str));                                                                                       \
         AddTextPrinterParameterized2(WIN_INTRO_TEXTBOX, FONT_MALE, gStringVar4, speed, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY); \
     }                                                                                                                                                        \
     else                                                                                                                                                     \
