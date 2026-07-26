@@ -3,6 +3,7 @@
 #include "mail_data.h"
 #include "pokemon_icon.h"
 #include "graphics.h"
+#include "deoxys_forms.h"
 
 #define POKE_ICON_BASE_PAL_TAG 56000
 
@@ -1115,7 +1116,13 @@ const u8 *GetMonIconTiles(u16 species, bool32 extra)
 
 const u8 *GetMonIconPtr(u16 species, u32 personality, bool32 extra)
 {
-    return GetMonIconTiles(GetIconSpecies(species, personality), extra);
+    u16 iconSpecies = GetIconSpecies(species, personality);
+
+    // A Deoxys knows its own forme, so pick the matching icon rather than
+    // relying on the caller's `extra` flag.
+    if (iconSpecies == SPECIES_DEOXYS)
+        return gMonIconTable[iconSpecies] + Deoxys_GetIconOffset(Deoxys_GetFormByPersonality(personality));
+    return GetMonIconTiles(iconSpecies, extra);
 }
 
 void DestroyMonIcon(struct Sprite *sprite)

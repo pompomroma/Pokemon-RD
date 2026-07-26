@@ -24,6 +24,7 @@
 #include "party_menu.h"
 #include "pokemon_fusion.h"
 #include "stat_custom.h"
+#include "deoxys_forms.h"
 #include "battle_gimmicks.h"
 #include "field_specials.h"
 #include "berry.h"
@@ -1640,29 +1641,9 @@ static const u16 sHMMoves[] =
     MOVE_ROCK_SMASH, MOVE_WATERFALL, MOVE_DIVE, HM_MOVES_END
 };
 
-#if defined(FIRERED)
-// Attack forme
-static const u16 sDeoxysBaseStats[] = 
-{
-    [STAT_HP]    = 50,
-    [STAT_ATK]   = 180,
-    [STAT_DEF]   = 20,
-    [STAT_SPEED] = 150,
-    [STAT_SPATK] = 180,
-    [STAT_SPDEF] = 20,
-};
-#elif defined(LEAFGREEN)
-// Defense forme
-static const u16 sDeoxysBaseStats[] =
-{
-    [STAT_HP]    = 50,
-    [STAT_ATK]   = 70,
-    [STAT_DEF]   = 160,
-    [STAT_SPEED] = 90,
-    [STAT_SPATK] = 70,
-    [STAT_SPDEF] = 160,
-};
-#endif
+// Deoxys base stats used to be a single version-specific table here (FireRed's
+// Attack forme, LeafGreen's Defense forme). The forme is now chosen per mon, so
+// the table lives in src/deoxys_forms.c and is looked up by forme instead.
 
 // The classes used by other players in the Union Room.
 // These should correspond with the overworld graphics in sUnionRoomObjGfxIds
@@ -6191,7 +6172,7 @@ static u16 GetDeoxysStat(struct Pokemon *mon, s32 statId)
 
     ivVal = GetMonData(mon, MON_DATA_HP_IV + statId, NULL);
     evVal = GetMonData(mon, MON_DATA_HP_EV + statId, NULL);
-    statValue = ((sDeoxysBaseStats[statId] * 2 + ivVal + evVal / 4) * mon->level) / 100 + 5;
+    statValue = ((Deoxys_GetFormBaseStat(Deoxys_GetMonForm(mon), statId) * 2 + ivVal + evVal / 4) * mon->level) / 100 + 5;
     nature = GetNature(mon);
     statValue = ModifyStatByNature(nature, statValue, (u8)statId);
     return statValue;

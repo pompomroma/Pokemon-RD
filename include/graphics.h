@@ -2340,6 +2340,8 @@ extern const u32 gMonBackPic_Deoxys[];
 extern const u32 gMonShinyPalette_Deoxys[];
 extern const u8 gMonIcon_Deoxys[];
 extern const u8 gMonFootprint_Deoxys[];
+extern const u32 gMonFrontPic_DeoxysDefense[];
+extern const u32 gMonBackPic_DeoxysDefense[];
 extern const u32 gMonFrontPic_Chimecho[];
 extern const u32 gMonPalette_Chimecho[];
 extern const u32 gMonBackPic_Chimecho[];

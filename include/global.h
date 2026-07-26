@@ -342,6 +342,21 @@ struct StatCustomRecord
     u8 flags;          // STAT_CUSTOM_FLAG_ACTIVE
 };
 
+// Which Deoxys forme an individual Deoxys is, keyed by personality + otId like
+// FusionRecord. Gen 3 picks the forme from the game version, so it is a global
+// there; here the player can hold several formes at once, so it has to be
+// stored per mon. Only Deoxys ever takes a slot, so the table is small.
+#define DEOXYS_FORM_RECORDS_COUNT 8
+#define DEOXYS_FORM_FLAG_ACTIVE   (1 << 0)
+
+struct DeoxysFormRecord
+{
+    u32 personality;
+    u32 otId;
+    u8 form;           // DEOXYS_FORM_*
+    u8 flags;          // DEOXYS_FORM_FLAG_ACTIVE
+};
+
 struct SaveBlock2
 {
     /*0x000*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
@@ -382,7 +397,8 @@ struct SaveBlock2
     /*0xE2A*/ u16 coopJoinedCode;    // the code the player entered to join a group (0 = none)
     /*0xE2C*/ u8 coopMemberCount;    // number of active companion avatars (0..3)
     /*0xE2D*/ u8 coopMemberGfx[3];   // OBJ_EVENT_GFX_* of each companion
-    /*0xE30*/ u8 filler_B20[0xF0];
+    /*0xE30*/ struct DeoxysFormRecord deoxysForms[DEOXYS_FORM_RECORDS_COUNT]; // 8 * 12 = 0x60
+    /*0xE90*/ u8 filler_B20[0x90];
     /*0xF20*/ u32 encryptionKey;
 }; // size: 0xF24
 

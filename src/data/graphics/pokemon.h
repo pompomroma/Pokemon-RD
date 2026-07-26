@@ -2701,8 +2701,19 @@ const u32 gMonFrontPic_Deoxys[] = INCBIN_U32("graphics/pokemon/deoxys/front.4bpp
 const u32 gMonPalette_Deoxys[] = INCBIN_U32("graphics/pokemon/deoxys/normal.gbapal.lz");
 const u32 gMonBackPic_Deoxys[] = INCBIN_U32("graphics/pokemon/deoxys/back.4bpp.lz");
 const u32 gMonShinyPalette_Deoxys[] = INCBIN_U32("graphics/pokemon/deoxys/shiny.gbapal.lz");
-const u8 gMonIcon_Deoxys[] = INCBIN_U8("graphics/pokemon/deoxys/icon.4bpp", "graphics/pokemon/deoxys/icon_attack.4bpp");
+// Three 0x400 icons back to back, indexed by forme (see Deoxys_GetIconOffset).
+// The first two are where vanilla's `extra` flag already pointed.
+const u8 gMonIcon_Deoxys[] = INCBIN_U8("graphics/pokemon/deoxys/icon.4bpp",
+                                       "graphics/pokemon/deoxys/icon_attack.4bpp",
+                                       "graphics/pokemon/deoxys/icon_defense.4bpp");
 const u8 gMonFootprint_Deoxys[] = INCBIN_U8("graphics/pokemon/deoxys/footprint.1bpp");
+
+// The Defense forme art normally only ships in LeafGreen. All four formes are
+// selectable here, so it is compiled in alongside the FireRed art and picked at
+// decompress time by src/deoxys_forms.c. Each of these is a 64x128 two-frame
+// pic: frame 0 is the Normal forme, frame 1 the version's own forme.
+const u32 gMonFrontPic_DeoxysDefense[] = INCBIN_U32("graphics/pokemon/deoxys/front_def.4bpp.lz");
+const u32 gMonBackPic_DeoxysDefense[] = INCBIN_U32("graphics/pokemon/deoxys/back_def.4bpp.lz");
 #endif
 
 #ifdef LEAFGREEN

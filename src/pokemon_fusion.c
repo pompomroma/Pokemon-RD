@@ -6,6 +6,7 @@
 #include "decompress.h"
 #include "pokemon.h"
 #include "pokemon_fusion.h"
+#include "deoxys_forms.h"
 #include "pokemon_storage_system.h"
 #include "item.h"
 #include "constants/items.h"
@@ -564,7 +565,9 @@ void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic)
     partner = rec->partnerSpecies;
     if (partner == SPECIES_NONE || partner >= NUM_SPECIES)
         return;
-    buffer = Alloc(MON_PIC_SIZE);
+    // Two frames' worth: Deoxys is a 64x128 pic and decompresses to 0x1000,
+    // which would run off the end of a one-frame buffer.
+    buffer = Alloc(2 * MON_PIC_SIZE);
     if (buffer == NULL)
         return;
     // Decompress the partner pic directly (not via the public loaders, which
@@ -573,8 +576,9 @@ void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic)
         LZ77UnCompWram(gMonFrontPicTable[partner].data, buffer);
     else
         LZ77UnCompWram(gMonBackPicTable[partner].data, buffer);
-    if (partner == SPECIES_DEOXYS)
-        CpuCopy32(buffer + 0x800, buffer, 0x800);
+    // Pick the partner's forme when fusing with a Deoxys. The partner has no
+    // personality of its own, so this falls back to the default forme.
+    Deoxys_ApplyFormToPic(buffer, partner, 0, isFrontPic);
     FuseMonPicPixels(dest, buffer);
     Free(buffer);
 }

@@ -3,11 +3,10 @@
 #include "decompress.h"
 #include "pokemon.h"
 #include "pokemon_fusion.h"
+#include "deoxys_forms.h"
 
 extern const struct CompressedSpriteSheet gMonFrontPicTable[];
 extern const struct CompressedSpriteSheet gMonBackPicTable[];
-
-static void DuplicateDeoxysTiles(void *pointer, s32 species);
 
 void LZDecompressWram(const void *src, void *dest)
 {
@@ -67,7 +66,8 @@ void DecompressPicFromTable(const struct CompressedSpriteSheet *src, void *buffe
         LZ77UnCompWram(gMonFrontPicTable[0].data, buffer);
     else
         LZ77UnCompWram(src->data, buffer);
-    DuplicateDeoxysTiles(buffer, species);
+    // No personality here, so this falls back to the vanilla FireRed forme.
+    Deoxys_ApplyFormToPic(buffer, species, 0, TRUE);
 }
 
 void HandleLoadSpecialPokePic(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality)
@@ -102,15 +102,9 @@ void LoadSpecialPokePic(const struct CompressedSpriteSheet *src, void *dest, s32
     else
         LZ77UnCompWram(src->data, dest);
 
-    DuplicateDeoxysTiles(dest, species);
+    Deoxys_ApplyFormToPic(dest, species, personality, isFrontPic);
     DrawSpindaSpots(species, personality, dest, isFrontPic);
     Fusion_SpliceMonPic(dest, personality, isFrontPic);
-}
-
-static void DuplicateDeoxysTiles(void *pointer, s32 species)
-{
-    if (species == SPECIES_DEOXYS)
-        CpuCopy32(pointer + 0x800, pointer, 0x800);
 }
 
 static void Unused_LZDecompressWramIndirect(const void **src, void *dest)
@@ -350,6 +344,11 @@ void LoadSpecialPokePic_DontHandleDeoxys(const struct CompressedSpriteSheet *src
     {
         LZ77UnCompWram(src->data, dest);
     }
+    // Vanilla skips the Deoxys frame select here, which is why the battle front
+    // sprite shows the Normal forme while the back sprite (loaded through
+    // HandleLoadSpecialPokePic) shows the version's. With the forme now chosen
+    // per mon it has to be applied on both sides or the two disagree.
+    Deoxys_ApplyFormToPic(dest, species, personality, isFrontPic);
     DrawSpindaSpots(species, personality, dest, isFrontPic);
     Fusion_SpliceMonPic(dest, personality, isFrontPic);
 }

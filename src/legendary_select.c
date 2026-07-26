@@ -12,14 +12,15 @@
 #include "script_pokemon_util.h"
 #include "legendary_select.h"
 #include "string_util.h"
+#include "deoxys_forms.h"
 #include "constants/songs.h"
 #include "constants/items.h"
 #include "constants/species.h"
 
 // Randomizer-mode starter: PROF. OAK opens his legendary vault and the player
-// takes TWO. Every legendary the game has is listed here -- these are all 21
-// that exist in this ROM (species stop at 412, so Gen 4+ legendaries have no
-// data to show).
+// takes TWO. Every legendary the game has is listed here -- the 21 that exist
+// in this ROM (species stop at 412, so Gen 4+ legendaries have no data to
+// show), with Deoxys split into its four formes for 24 rows in total.
 //
 // Modeled on src/language_select.c, which uses the same proven BG/palette/frame
 // and WIN0-highlight scaffolding.
@@ -28,16 +29,38 @@
 #define VISIBLE_ROWS 7
 #define STARTER_LEVEL 5
 
-static const u16 sLegendaries[] =
+// form is DEOXYS_FORM_NONE for everything that is not Deoxys.
+struct LegendaryEntry
 {
-    SPECIES_ARTICUNO, SPECIES_ZAPDOS,   SPECIES_MOLTRES,  SPECIES_MEWTWO,
-    SPECIES_MEW,      SPECIES_RAIKOU,   SPECIES_ENTEI,    SPECIES_SUICUNE,
-    SPECIES_LUGIA,    SPECIES_HO_OH,    SPECIES_CELEBI,   SPECIES_REGIROCK,
-    SPECIES_REGICE,   SPECIES_REGISTEEL, SPECIES_LATIAS,  SPECIES_LATIOS,
-    SPECIES_KYOGRE,   SPECIES_GROUDON,  SPECIES_RAYQUAZA, SPECIES_JIRACHI,
-    SPECIES_DEOXYS,
+    u16 species;
+    u8 form;
+};
+
+#define LEGEND(s) { SPECIES_##s, DEOXYS_FORM_NONE }
+
+static const struct LegendaryEntry sLegendaries[] =
+{
+    LEGEND(ARTICUNO),  LEGEND(ZAPDOS),    LEGEND(MOLTRES),   LEGEND(MEWTWO),
+    LEGEND(MEW),       LEGEND(RAIKOU),    LEGEND(ENTEI),     LEGEND(SUICUNE),
+    LEGEND(LUGIA),     LEGEND(HO_OH),     LEGEND(CELEBI),    LEGEND(REGIROCK),
+    LEGEND(REGICE),    LEGEND(REGISTEEL), LEGEND(LATIAS),    LEGEND(LATIOS),
+    LEGEND(KYOGRE),    LEGEND(GROUDON),   LEGEND(RAYQUAZA),  LEGEND(JIRACHI),
+    // All four Deoxys formes are offered separately -- they differ enough in
+    // stats to be genuinely different picks.
+    { SPECIES_DEOXYS, DEOXYS_FORM_NORMAL },
+    { SPECIES_DEOXYS, DEOXYS_FORM_ATTACK },
+    { SPECIES_DEOXYS, DEOXYS_FORM_DEFENSE },
+    { SPECIES_DEOXYS, DEOXYS_FORM_SPEED },
 };
 #define LEGENDARY_COUNT ARRAY_COUNT(sLegendaries)
+
+// gSpeciesNames has a single "DEOXYS" entry, so the formes need their own.
+static const u8 *EntryName(u16 idx)
+{
+    if (sLegendaries[idx].form != DEOXYS_FORM_NONE)
+        return Deoxys_GetFormName(sLegendaries[idx].form);
+    return gSpeciesNames[sLegendaries[idx].species];
+}
 
 enum { WIN_TITLE, WIN_LIST, WIN_FOOTER };
 
@@ -227,7 +250,7 @@ static void PrintList(void)
 
         if (idx >= LEGENDARY_COUNT)
             break;
-        end = StringCopy(buf, gSpeciesNames[sLegendaries[idx]]);
+        end = StringCopy(buf, EntryName(idx));
         if (sPtr->numPicked > 0 && sPtr->picked[0] == idx)
             StringCopy(end, sText_First);
         else if (sPtr->numPicked > 1 && sPtr->picked[1] == idx)
@@ -260,15 +283,19 @@ static void UpdateHighlight(void)
 // Shows the highlighted legendary so the player picks by sight, not just name.
 static void ShowCurrentSprite(void)
 {
-    u16 species = sLegendaries[sPtr->cursor];
+    u16 species = sLegendaries[sPtr->cursor].species;
 
     if (sPtr->spriteId != SPRITE_NONE)
     {
         FreeAndDestroyMonPicSprite(sPtr->spriteId);
         sPtr->spriteId = SPRITE_NONE;
     }
+    // The preview mon does not exist yet, so there is no record to look the
+    // forme up from -- force it for the duration of this one decompress.
+    Deoxys_SetPreviewForm(sLegendaries[sPtr->cursor].form);
     sPtr->spriteId = CreateMonPicSprite_HandleDeoxys(species, 0, 0x8000, TRUE, 180, 72, 0,
                                                      gMonPaletteTable[species].tag);
+    Deoxys_SetPreviewForm(DEOXYS_FORM_NONE);
 }
 
 static void Task_LegendarySelect(u8 taskId)
@@ -329,15 +356,26 @@ static void Task_LegendarySelect(u8 taskId)
     }
 }
 
+// Gives one pick and, for Deoxys, tags the mon that was just added with the
+// chosen forme. The party is empty when the vault opens, so both picks land in
+// the party rather than the PC; a PC-bound mon simply keeps the default forme.
+static void GivePick(const struct LegendaryEntry *entry)
+{
+    if (ScriptGiveMon(entry->species, STARTER_LEVEL, ITEM_NONE, 0, 0, 0) == MON_GIVEN_TO_PARTY
+     && entry->form != DEOXYS_FORM_NONE
+     && gPlayerPartyCount > 0)
+        Deoxys_SetMonForm(&gPlayerParty[gPlayerPartyCount - 1], entry->form);
+}
+
 static void Finish(u8 taskId)
 {
-    u16 a = sLegendaries[sPtr->picked[0]];
-    u16 b = sLegendaries[sPtr->picked[1]];
+    const struct LegendaryEntry *a = &sLegendaries[sPtr->picked[0]];
+    const struct LegendaryEntry *b = &sLegendaries[sPtr->picked[1]];
 
     if (sPtr->spriteId != SPRITE_NONE)
         FreeAndDestroyMonPicSprite(sPtr->spriteId);
-    ScriptGiveMon(a, STARTER_LEVEL, ITEM_NONE, 0, 0, 0);
-    ScriptGiveMon(b, STARTER_LEVEL, ITEM_NONE, 0, 0, 0);
+    GivePick(a);
+    GivePick(b);
     FreeAllWindowBuffers();
     FREE_AND_SET_NULL(sPtr);
     DestroyTask(taskId);
