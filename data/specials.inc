@@ -456,4 +456,6 @@ gSpecials::
 	def_special SaveHoleReturnWarp
 	def_special ScaleWildMonToPlayerLevel
 	def_special GiveDungeonMonAtPlayerLevel
+	def_special ChooseTwoLegendaries
+	def_special IsRandomizerModeActive
 gSpecialsEnd::

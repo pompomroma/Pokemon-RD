@@ -100,3 +100,9 @@ u16 GetRandomizedStarterSpecies(u16 species)
         return sLegendaryStarters[(h >> 16) % ARRAY_COUNT(sLegendaryStarters)];
     return GetRandomizedSpecies(species);
 }
+
+// Script-facing check so map scripts can branch on the mode (specialvar).
+u16 IsRandomizerModeActive(void)
+{
+    return Randomizer_IsActive() ? TRUE : FALSE;
+}

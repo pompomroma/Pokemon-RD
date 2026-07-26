@@ -1124,7 +1124,18 @@ PalletTown_ProfessorOaksLab_EventScript_ChoseStarter::
 	call EventScript_RestorePrevTextColor
 	setflag FLAG_SYS_POKEMON_GET
 	setflag FLAG_PALLET_LADY_NOT_BLOCKING_SIGN
+	@ In Randomizer mode OAK opens his legendary vault instead: the player picks
+	@ TWO legendaries from the full list. The normal single gift is skipped.
+	specialvar VAR_RESULT, IsRandomizerModeActive
+	goto_if_eq VAR_RESULT, TRUE, PalletTown_ProfessorOaksLab_EventScript_ChooseLegendaries
 	givemon PLAYER_STARTER_SPECIES, 5
+	goto PalletTown_ProfessorOaksLab_EventScript_AfterStarterGiven
+
+PalletTown_ProfessorOaksLab_EventScript_ChooseLegendaries::
+	special ChooseTwoLegendaries
+	waitstate
+
+PalletTown_ProfessorOaksLab_EventScript_AfterStarterGiven::
 	copyvar VAR_STARTER_MON, PLAYER_STARTER_NUM
 	bufferspeciesname STR_VAR_1, DISPLAY_STARTER_SPECIES
 	message PalletTown_ProfessorOaksLab_Text_ReceivedMonFromOak

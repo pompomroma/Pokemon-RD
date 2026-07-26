@@ -24,4 +24,7 @@ u16 GetRandomizedStarterSpecies(u16 species);
 // the wild in every save, at the encounter slot's own level.
 u16 Wild_ApplyLegendaryChance(u16 species);
 
+// Script-facing: TRUE when randomizer mode is on (use with specialvar).
+u16 IsRandomizerModeActive(void);
+
 #endif // GUARD_RANDOMIZER_H
