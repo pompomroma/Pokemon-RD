@@ -3951,6 +3951,13 @@ BattleScript_GigantamaxActivates::
 	waitmessage B_WAIT_TIME_LONG
 	end3
 
+BattleScript_KryptonEvolutionActivates::
+	pause B_WAIT_TIME_SHORT
+	playanimation BS_SCRIPTING, B_ANIM_KRYPTON_EVOLUTION
+	printstring STRINGID_KRYPTONEVOLVED
+	waitmessage B_WAIT_TIME_LONG
+	end3
+
 BattleScript_SpeedBoostActivates::
 	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
 	printstring STRINGID_PKMNRAISEDSPEED

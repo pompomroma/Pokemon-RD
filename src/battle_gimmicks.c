@@ -59,34 +59,105 @@ static u16 MultiplyStat(u16 stat, u16 num, u16 den)
     return result;
 }
 
+// Rebuilds the battler's live stats from its party mon and re-applies whichever
+// gimmick boosts are currently active. Written as a recompute rather than an
+// in-place multiply so it is IDEMPOTENT: the engine calls it from four places
+// (switch-in, SwitchInClearSetData, Baton Pass, intro), and one of those does not
+// reload the base stats first, so multiplying in place would compound the boost.
 void Gimmick_ApplyBattleStats(u8 battler)
 {
-    // Independent (not exclusive): a fused mon carrying BOTH a Mega Stone and a
-    // Dyna Band gets both boosts stacked at once.
-    if (HasArtifact(battler, ITEM_MEGA_STONE))
-    {
-        // Mega Evolution: +30% to every non-HP stat.
-        gBattleMons[battler].attack    = MultiplyStat(gBattleMons[battler].attack, 13, 10);
-        gBattleMons[battler].defense   = MultiplyStat(gBattleMons[battler].defense, 13, 10);
-        gBattleMons[battler].speed     = MultiplyStat(gBattleMons[battler].speed, 13, 10);
-        gBattleMons[battler].spAttack  = MultiplyStat(gBattleMons[battler].spAttack, 13, 10);
-        gBattleMons[battler].spDefense = MultiplyStat(gBattleMons[battler].spDefense, 13, 10);
-    }
-    if (gBattleStruct->dynamaxTurns[battler] != 0)
-    {
-        // Dynamax swells the defenses; Gigantamax (a fused holder) more so.
-        u16 num = (gBattleStruct->gigantamaxed & gBitTable[battler]) ? 7 : 3;
-        u16 den = (gBattleStruct->gigantamaxed & gBitTable[battler]) ? 4 : 2;
+    struct Pokemon *mon = Gimmick_GetBattlerPartyMon(battler);
+    u16 atk, def, spe, spa, spd;
 
-        gBattleMons[battler].defense   = MultiplyStat(gBattleMons[battler].defense, num, den);
-        gBattleMons[battler].spDefense = MultiplyStat(gBattleMons[battler].spDefense, num, den);
+    // Transformed battlers wear another mon's stats; leave those alone.
+    if (gBattleMons[battler].species != GetMonData(mon, MON_DATA_SPECIES, NULL))
+        return;
+
+    atk = GetMonData(mon, MON_DATA_ATK, NULL);
+    def = GetMonData(mon, MON_DATA_DEF, NULL);
+    spe = GetMonData(mon, MON_DATA_SPEED, NULL);
+    spa = GetMonData(mon, MON_DATA_SPATK, NULL);
+    spd = GetMonData(mon, MON_DATA_SPDEF, NULL);
+
+    if (gBattleStruct->kryptonEvolved & gBitTable[battler])
+    {
+        // KRYPTON EVOLUTION quadruples every stat outright. It supersedes Mega
+        // and Dynamax rather than stacking with them -- an eligible mon qualifies
+        // for all three, and this is the top tier.
+        atk = MultiplyStat(atk, 4, 1);
+        def = MultiplyStat(def, 4, 1);
+        spe = MultiplyStat(spe, 4, 1);
+        spa = MultiplyStat(spa, 4, 1);
+        spd = MultiplyStat(spd, 4, 1);
     }
+    else
+    {
+        if (HasArtifact(battler, ITEM_MEGA_STONE))
+        {
+            // Mega Evolution: +30% to every non-HP stat.
+            atk = MultiplyStat(atk, 13, 10);
+            def = MultiplyStat(def, 13, 10);
+            spe = MultiplyStat(spe, 13, 10);
+            spa = MultiplyStat(spa, 13, 10);
+            spd = MultiplyStat(spd, 13, 10);
+        }
+        if (gBattleStruct->dynamaxTurns[battler] != 0)
+        {
+            // Dynamax swells the defenses; Gigantamax (a fused holder) more so.
+            u16 num = (gBattleStruct->gigantamaxed & gBitTable[battler]) ? 7 : 3;
+            u16 den = (gBattleStruct->gigantamaxed & gBitTable[battler]) ? 4 : 2;
+
+            def = MultiplyStat(def, num, den);
+            spd = MultiplyStat(spd, num, den);
+        }
+    }
+
+    gBattleMons[battler].attack    = atk;
+    gBattleMons[battler].defense   = def;
+    gBattleMons[battler].speed     = spe;
+    gBattleMons[battler].spAttack  = spa;
+    gBattleMons[battler].spDefense = spd;
+}
+
+// Marks the battler as Krypton-evolved and puts the x4 stats live. Safe to call
+// more than once (the stat pass recomputes from the party mon's base stats).
+static void ApplyKryptonEvolution(u8 battler)
+{
+    gBattleStruct->kryptonEvolved |= gBitTable[battler];
+    // Krypton stands in for the lesser entrances, so their cutscenes never fire
+    // on top of it and their (weaker) boosts never overwrite the x4.
+    gBattleStruct->megaEvolved |= gBitTable[battler];
+    gBattleStruct->dynamaxed |= gBitTable[battler];
+    gBattleStruct->gigantamaxed &= ~gBitTable[battler];
+    // Krypton is permanent. Leaving a Dynamax countdown running would reload the
+    // base defenses when it expired and silently undo the x4.
+    gBattleStruct->dynamaxTurns[battler] = 0;
+
+    Gimmick_ApplyBattleStats(battler);
+
+    // The same HP surge the other forms grant (heal only; maxHP is untouched so
+    // the health bar stays consistent).
+    gBattleMons[battler].hp += gBattleMons[battler].maxHP / 2;
+    if (gBattleMons[battler].hp > gBattleMons[battler].maxHP)
+        gBattleMons[battler].hp = gBattleMons[battler].maxHP;
 }
 
 bool8 Gimmick_TrySwitchInActivate(u8 battler)
 {
     if (gBattleMons[battler].hp == 0)
         return FALSE;
+
+    // KRYPTON EVOLUTION entrance -- checked FIRST, because a mon that qualifies
+    // also holds a Mega Stone and a Dyna Band and would otherwise be caught by
+    // the Mega branch below and never reach this tier.
+    if (Gimmick_CanKryptonEvolve(battler)
+     && !(gBattleStruct->kryptonEvolved & gBitTable[battler]))
+    {
+        ApplyKryptonEvolution(battler);
+        gBattleScripting.battler = battler;
+        BattleScriptPushCursorAndCallback(BattleScript_KryptonEvolutionActivates);
+        return TRUE;
+    }
 
     // Mega Evolution entrance (once per battle per battler).
     if (HasArtifact(battler, ITEM_MEGA_STONE)
@@ -211,6 +282,15 @@ void Gimmick_ApplyMovePower(u8 battler, u16 move)
         return;
     }
 
+    // KRYPTON EVOLUTION keeps the Gigantamax power bonus permanently -- it
+    // replaces Dynamax, so without this the top tier would hit softer than the
+    // tier below it once the countdown it suppressed would have been running.
+    if (gBattleStruct->kryptonEvolved & gBitTable[battler])
+    {
+        gDynamicBasePower = min(power * 7 / 4, 250);
+        return;
+    }
+
     // Dynamax / Gigantamax: damaging moves hit harder while active.
     if (gBattleStruct->dynamaxTurns[battler] != 0)
     {
@@ -289,27 +369,41 @@ bool8 Gimmick_TryStartFormChange(u8 battler)
 {
     u16 color, num;
     u8 type;
-    bool8 fused, mega, dyna, zc, krypton;
+    bool8 fused, mega, dyna, zc;
 
     if (gBattleMons[battler].hp == 0)
         return FALSE;
     if (gBattleStruct->formChanged & gBitTable[battler])
         return FALSE; // once per battle per battler
 
+    // KRYPTON EVOLUTION on demand. It normally fires by itself the moment an
+    // eligible mon enters the battle, so this is the manual path for a mon that
+    // became eligible mid-battle (e.g. it was given its Z Crystal after sending
+    // out). Routed through the same applier so the x4 can never double up.
+    if (Gimmick_CanKryptonEvolve(battler))
+    {
+        if (gBattleStruct->kryptonEvolved & gBitTable[battler])
+            return FALSE; // already Krypton-evolved this battle
+        gBattleStruct->formChanged |= gBitTable[battler];
+        ApplyKryptonEvolution(battler);
+        sLastFormName = sText_FormKrypton;
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 8, RGB2(31, 31, 31)); // blazing core
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 9, RGB2(31, 26, 10)); // radiant gold
+        PlaySE(SE_M_MEGA_KICK);
+        return TRUE;
+    }
+
     // Consider both the real item slot AND the two items a fused mon stored.
     mega = HasArtifact(battler, ITEM_MEGA_STONE);
     dyna = HasArtifact(battler, ITEM_DYNA_BAND);
     zc = HasArtifact(battler, ITEM_Z_CRYSTAL);
     fused = IsBattlerFused(battler);
-    krypton = fused && mega && dyna;
     if (!mega && !dyna && !zc && !fused)
         return FALSE; // nothing to transform into
 
     gBattleStruct->formChanged |= gBitTable[battler];
 
-    // KRYPTON EVOLUTION quadruples every stat. Every other form keeps the huge
-    // x2 it already had.
-    num = krypton ? 4 : 2;
+    num = 2; // Krypton (x4) is handled above; every other form keeps its x2.
     gBattleMons[battler].attack    = MultiplyStat(gBattleMons[battler].attack, num, 1);
     gBattleMons[battler].defense   = MultiplyStat(gBattleMons[battler].defense, num, 1);
     gBattleMons[battler].speed     = MultiplyStat(gBattleMons[battler].speed, num, 1);
@@ -321,18 +415,12 @@ bool8 Gimmick_TryStartFormChange(u8 battler)
         gBattleMons[battler].hp = gBattleMons[battler].maxHP;
 
     // Each form gets its own look rather than one shared recolor:
-    //   KRYPTON    radiant white-gold, brightest of all
     //   GIGANTAMAX deep violet swell (a fused Dyna Band holder)
     //   DYNAMAX    heavy crimson
     //   MEGA       hard bright rim, keeping the mon's own colours readable
     //   otherwise  tinted by the mon's primary type, so species still differ
-    if (krypton)
-    {
-        sLastFormName = sText_FormKrypton;
-        BlendPalette(OBJ_PLTT_ID(battler), 16, 8, RGB2(31, 31, 31)); // blazing core
-        BlendPalette(OBJ_PLTT_ID(battler), 16, 9, RGB2(31, 26, 10)); // radiant gold
-    }
-    else if (dyna && fused)
+    // (KRYPTON's radiant white-gold is applied on its own path above.)
+    if (dyna && fused)
     {
         sLastFormName = sText_FormGiga;
         BlendPalette(OBJ_PLTT_ID(battler), 16, 10, RGB2(20, 6, 28));

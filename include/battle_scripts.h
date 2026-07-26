@@ -150,6 +150,7 @@ extern const u8 BattleScript_FusionAuraFlares[];
 extern const u8 BattleScript_MegaEvolutionActivates[];
 extern const u8 BattleScript_DynamaxActivates[];
 extern const u8 BattleScript_GigantamaxActivates[];
+extern const u8 BattleScript_KryptonEvolutionActivates[];
 extern const u8 BattleScript_TookAttack[];
 extern const u8 BattleScript_SturdyPreventsOHKO[];
 extern const u8 BattleScript_DampStopsExplosion[];

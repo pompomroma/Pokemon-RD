@@ -493,6 +493,7 @@ static const u8 sText_FusionAuraFlared[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s 
 static const u8 sText_MegaEvolved[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} is reacting\nto the MEGA STONE! It Mega Evolved!");
 static const u8 sText_Dynamaxed[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} Dynamaxed\ninto a towering giant!");
 static const u8 sText_Gigantamaxed[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX} Gigantamaxed\ninto its fused colossus form!");
+static const u8 sText_KryptonEvolved[] = _("The MEGA STONE and DYNA BAND fused\ninside {B_SCR_ACTIVE_NAME_WITH_PREFIX}!\pKRYPTON EVOLUTION! Its every stat\nsurged to four times its power!");
 static const u8 sText_BerrySuffix[] = _(" BERRY");
 static const u8 sText_Enigma[] = _("ナゾ");
 static const u8 sText_PkmnsItemCuredParalysis[] = _("{B_SCR_ACTIVE_NAME_WITH_PREFIX}'s {B_LAST_ITEM}\ncured paralysis!");
@@ -902,7 +903,8 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT - BATTLESTRINGS_TABLE_ST
     [STRINGID_FUSIONAURAFLARED - BATTLESTRINGS_TABLE_START]              = sText_FusionAuraFlared,
     [STRINGID_MEGAEVOLVED - BATTLESTRINGS_TABLE_START]                   = sText_MegaEvolved,
     [STRINGID_DYNAMAXED - BATTLESTRINGS_TABLE_START]                     = sText_Dynamaxed,
-    [STRINGID_GIGANTAMAXED - BATTLESTRINGS_TABLE_START]                  = sText_Gigantamaxed
+    [STRINGID_GIGANTAMAXED - BATTLESTRINGS_TABLE_START]                  = sText_Gigantamaxed,
+    [STRINGID_KRYPTONEVOLVED - BATTLESTRINGS_TABLE_START]                = sText_KryptonEvolved
 };
 
 const u16 gMissStringIds[] =

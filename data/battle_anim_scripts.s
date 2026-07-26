@@ -424,6 +424,7 @@ gBattleAnims_General::
 	.4byte General_MegaEvolution            @ B_ANIM_MEGA_EVOLUTION
 	.4byte General_DynamaxGrowth            @ B_ANIM_DYNAMAX_GROWTH
 	.4byte General_GigantamaxGrowth         @ B_ANIM_GIGANTAMAX_GROWTH
+	.4byte General_KryptonEvolution         @ B_ANIM_KRYPTON_EVOLUTION
 
 	.align 2
 gBattleAnims_Special::
@@ -9861,6 +9862,37 @@ General_GigantamaxGrowth:
 	playsewithpan SE_M_EXPLOSION, SOUND_PAN_ATTACKER
 	createvisualtask AnimTask_HorizontalShake, 5, (MAX_BATTLERS_COUNT + 1), 9, 30
 	createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG | F_PAL_BATTLERS, 5, 2, RGB(24, 12, 31), 12, RGB_BLACK, 0
+	waitforvisualfinish
+	end
+
+@ KRYPTON EVOLUTION: the grandest entrance in the game -- reserved for a fused
+@ Pokemon built from a MEGA STONE holder and a DYNA BAND holder. Three swells in
+@ radiant white-gold instead of two, a longer blackout, and a heavier quake.
+General_KryptonEvolution:
+	loadspritegfx ANIM_TAG_FOCUS_ENERGY
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 0, 16, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_DRAGON_RAGE, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_BlendColorCycle, 2, F_PAL_ATTACKER, 2, 2, 0, 14, RGB(31, 28, 12)
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 6
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 6
+	createvisualtask AnimTask_GrowAndShrink, 2
+	call EndureEffect
+	delay 6
+	call EndureEffect
+	waitforvisualfinish
+	playsewithpan SE_M_MEGA_KICK, SOUND_PAN_ATTACKER
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 16, 0, RGB_BLACK
+	waitforvisualfinish
+	playsewithpan SE_M_EXPLOSION, SOUND_PAN_ATTACKER
+	createvisualtask AnimTask_HorizontalShake, 5, (MAX_BATTLERS_COUNT + 1), 12, 40
+	createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG | F_PAL_BATTLERS, 5, 2, RGB_WHITE, 16, RGB_BLACK, 0
+	waitforvisualfinish
+	createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG | F_PAL_BATTLERS, 4, 2, RGB(31, 26, 10), 12, RGB_BLACK, 0
 	waitforvisualfinish
 	end
 

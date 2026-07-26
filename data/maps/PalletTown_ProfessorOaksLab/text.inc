@@ -163,7 +163,16 @@ PalletTown_ProfessorOaksLab_Text_OakGivesBattleArtifacts::
     .string "And the DYNA BAND to Dynamax\n"
     .string "into a towering giant!\p"
     .string "A fused POKéMON holding the BAND\n"
-    .string "will even Gigantamax!$"
+    .string "will even Gigantamax!\p"
+    .string "And there is a rumour beyond even\n"
+    .string "that. KRYPTON EVOLUTION.\p"
+    .string "Fuse a POKéMON holding the MEGA\n"
+    .string "STONE with one holding the DYNA\l"
+    .string "BAND. The FUSION STONE keeps both.\p"
+    .string "That POKéMON quadruples every\n"
+    .string "stat the moment it enters battle…\p"
+    .string "and its own item slot is still\n"
+    .string "free to hold the Z CRYSTAL!$"
 
 PalletTown_ProfessorOaksLab_Text_ReceivedMegaStone::
     .string "{PLAYER} received the MEGA STONE\n"

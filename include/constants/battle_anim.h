@@ -379,6 +379,7 @@
 #define B_ANIM_MEGA_EVOLUTION           29
 #define B_ANIM_DYNAMAX_GROWTH           30
 #define B_ANIM_GIGANTAMAX_GROWTH        31
+#define B_ANIM_KRYPTON_EVOLUTION        32
 
 // special animations table (gBattleAnims_Special)
 #define B_ANIM_LVL_UP                   0

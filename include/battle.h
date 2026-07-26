@@ -463,9 +463,14 @@ struct BattleStruct
     u8 zMoveThisMove;     // bitmask: battler's current move is the Z-Move
     u8 zMoveArmed;        // bitmask: player armed the Z-Move (SELECT) for this move
     u8 formChanged;       // bitmask: battlers that used their START form change
+    u8 kryptonEvolved;    // bitmask: battlers that underwent KRYPTON EVOLUTION
     u8 dynamaxTurns[MAX_BATTLERS_COUNT]; // remaining Dynamax turns per battler
-    u8 padding_1E5[0x10];
+    u8 padding_1E5[0xF];
 }; // size == 0x200 bytes
+
+// The engine allocates this struct at a fixed size; if it ever grows past it,
+// fields silently overlap other data. Fail the build instead.
+STATIC_ASSERT(sizeof(struct BattleStruct) <= 0x200, BattleStructTooBig);
 
 extern struct BattleStruct *gBattleStruct;
 
