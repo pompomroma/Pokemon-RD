@@ -18,6 +18,7 @@
 #include "pokemon_storage_system.h"
 #include "roamer.h"
 #include "item.h"
+#include "game_language.h"
 #include "player_pc.h"
 #include "berry.h"
 #include "easy_chat.h"
@@ -66,6 +67,9 @@ static void SetDefaultOptions(void)
     gSaveBlock2Ptr->optionsBattleSceneOff = FALSE;
     gSaveBlock2Ptr->regionMapZoom = FALSE;
     gSaveBlock2Ptr->optionsButtonMode = OPTIONS_BUTTON_MODE_HELP;
+    // Set explicitly rather than relying on ClearSav2's memset, so the default
+    // survives any future change to the call order.
+    gSaveBlock2Ptr->optionsLanguage = GAME_LANG_ENGLISH;
 }
 
 static void ClearPokedexFlags(void)

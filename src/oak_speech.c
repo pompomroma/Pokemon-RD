@@ -1615,10 +1615,13 @@ static void Task_OakSpeech_ConfirmName(u8 taskId)
     {
         if (tNameNotConfirmed == TRUE)
         {
+            // Localize before expanding: OakSpeechPrintMessage skips its own
+            // GameText_Localize call when handed gStringVar4, so these lines
+            // must be translated here or they stay English.
             if (sOakSpeechResources->hasPlayerBeenNamed == FALSE)
-                StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_SoYourNameIsPlayer);
+                StringExpandPlaceholders(gStringVar4, GameText_Localize(gOakSpeech_Text_SoYourNameIsPlayer));
             else
-                StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_ConfirmRivalName);
+                StringExpandPlaceholders(gStringVar4, GameText_Localize(gOakSpeech_Text_ConfirmRivalName));
             OakSpeechPrintMessage(gStringVar4, sOakSpeechResources->textSpeed);
             tNameNotConfirmed = FALSE;
             tTimer = 25;
@@ -1654,7 +1657,7 @@ static void Task_OakSpeech_HandleConfirmNameInput(u8 taskId)
         }
         else
         {
-            StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_RememberRivalsName);
+            StringExpandPlaceholders(gStringVar4, GameText_Localize(gOakSpeech_Text_RememberRivalsName));
             OakSpeechPrintMessage(gStringVar4, sOakSpeechResources->textSpeed);
             gTasks[taskId].func = Task_OakSpeech_FadeOutRivalPic;
         }
@@ -1746,7 +1749,7 @@ static void Task_OakSpeech_LetsGo(u8 taskId)
 {
     if (gTasks[taskId].tTrainerPicFadeState != 0)
     {
-        StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_LetsGo);
+        StringExpandPlaceholders(gStringVar4, GameText_Localize(gOakSpeech_Text_LetsGo));
         OakSpeechPrintMessage(gStringVar4, sOakSpeechResources->textSpeed);
         gTasks[taskId].tTimer = 30;
         gTasks[taskId].func = Task_OakSpeech_FadeOutBGM;

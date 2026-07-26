@@ -11,6 +11,14 @@
 #define GAME_LANG_JAPANESE 2
 #define GAME_LANG_CHINESE  3
 #define GAME_LANG_COUNT    4
+#define GAME_LANG_NONE     0xFF // "no boot choice made" sentinel, never stored
+
+// Records the boot screen's language pick, and re-applies it over a save that
+// was loaded (or defaulted) afterwards. The title screen reloads SaveBlock2
+// from flash after the boot screen runs, so without the re-apply the pick is
+// discarded and the language option appears to do nothing.
+void GameLanguage_SetBootChoice(u8 lang);
+void GameLanguage_ReapplyBootChoice(void);
 
 // Returns ko when the player selected Korean and ko is non-NULL, else en.
 // (Japanese/Chinese have the boot selection screen and native-script labels,

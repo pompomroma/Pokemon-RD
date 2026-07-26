@@ -15,6 +15,7 @@
 #include "clear_save_data_screen.h"
 #include "berry_fix_program.h"
 #include "decompress.h"
+#include "game_language.h"
 #include "constants/songs.h"
 
 enum TitleScreenScene
@@ -739,6 +740,10 @@ static void SetTitleScreenScene_Cry(s16 *data)
             LoadGameSave(SAVE_NORMAL);
             if (gSaveFileStatus == SAVE_STATUS_EMPTY || gSaveFileStatus == SAVE_STATUS_INVALID)
                 Sav2_ClearSetDefault();
+            // The boot language screen ran before this point, but the load above
+            // just overwrote SaveBlock2 with the saved (or default) value. Put
+            // the player's pick back.
+            GameLanguage_ReapplyBootChoice();
             SetPokemonCryStereo(gSaveBlock2Ptr->optionsSound);
             InitHeap(gHeap, HEAP_SIZE);
             SetMainCallback2(CB2_InitMainMenu);

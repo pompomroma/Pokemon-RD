@@ -341,6 +341,10 @@ static void Task_LanguageSelect(u8 taskId)
         {
             PlaySE(SE_SELECT);
             gSaveBlock2Ptr->optionsLanguage = sLangSelectPtr->cursorPos;
+            // The title screen reloads SaveBlock2 from flash after this screen,
+            // which would wipe the line above; remember the pick outside the
+            // save block so it can be re-applied once that load has happened.
+            GameLanguage_SetBootChoice(sLangSelectPtr->cursorPos);
             sLangSelectPtr->loadState++;
         }
         break;

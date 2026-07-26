@@ -3,6 +3,29 @@
 #include "event_scripts.h"
 #include "korean_dialogue.h"
 
+// The language chosen on the boot screen, held outside SaveBlock2 because the
+// title screen relocates and then reloads that block from flash after the boot
+// screen has run (title_screen.c, SetTitleScreenScene_Cry) -- a choice written
+// only into gSaveBlock2Ptr there is silently overwritten by the saved value, or
+// zeroed to English by Sav2_ClearSetDefault when there is no save yet.
+// GAME_LANG_NONE means "not chosen this boot", so the saved value stands.
+EWRAM_DATA static u8 sBootLanguage = GAME_LANG_NONE;
+
+void GameLanguage_SetBootChoice(u8 lang)
+{
+    if (lang < GAME_LANG_COUNT)
+        sBootLanguage = lang;
+}
+
+// Re-applies the boot screen's choice over a freshly loaded/defaulted save.
+// Call this after every LoadGameSave / Sav2_ClearSetDefault pair that can run
+// after the boot screen.
+void GameLanguage_ReapplyBootChoice(void)
+{
+    if (sBootLanguage < GAME_LANG_COUNT)
+        gSaveBlock2Ptr->optionsLanguage = sBootLanguage;
+}
+
 const u8 *GetLangString(const u8 *en, const u8 *ko)
 {
     if (ko != NULL && gSaveBlock2Ptr->optionsLanguage == GAME_LANG_KOREAN)
