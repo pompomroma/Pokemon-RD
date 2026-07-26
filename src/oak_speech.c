@@ -12,6 +12,7 @@
 #include "pokeball.h"
 #include "naming_screen.h"
 #include "game_language.h"
+#include "constants/difficulty.h"
 #include "math_util.h"
 #include "overworld.h"
 #include "random.h"
@@ -26,6 +27,7 @@ enum
     WIN_INTRO_BOYGIRL,
     WIN_INTRO_YESNO,
     WIN_INTRO_NAMES,
+    WIN_INTRO_DIFFICULTY,
     NUM_INTRO_WINDOWS,
 };
 
@@ -69,6 +71,9 @@ static void Task_OakSpeech_TellMeALittleAboutYourself(u8);
 static void Task_OakSpeech_FadeOutOak(u8);
 static void Task_OakSpeech_AskPlayerGender(u8);
 static void Task_OakSpeech_ShowGenderOptions(u8);
+static void Task_OakSpeech_AskDifficulty(u8);
+static void Task_OakSpeech_ShowDifficultyOptions(u8);
+static void Task_OakSpeech_HandleDifficultyInput(u8);
 static void Task_OakSpeech_HandleGenderInput(u8);
 static void Task_OakSpeech_ClearGenderWindows(u8);
 static void Task_OakSpeech_AskAdventureMode(u8);
@@ -326,6 +331,18 @@ static const struct WindowTemplate sIntro_WindowTemplates[NUM_INTRO_WINDOWS + 1]
         .tilemapTop = 2,
         .width = 12,
         .height = 10,
+        .paletteNum = 15,
+        .baseBlock = 1
+    },
+    // Difficulty list: five rows, and wide enough for the longest name
+    // ("AW SHIBAL GAY BBAKSAY").
+    [WIN_INTRO_DIFFICULTY] =
+    {
+        .bg = 0,
+        .tilemapLeft = 2,
+        .tilemapTop = 5,
+        .width = 25,
+        .height = 12,
         .paletteNum = 15,
         .baseBlock = 1
     },
@@ -1389,6 +1406,73 @@ static void Task_OakSpeech_HandleModeInput(u8 taskId)
     case MENU_NOTHING_CHOSEN:
         return;
     }
+    gTasks[taskId].func = Task_OakSpeech_AskDifficulty;
+}
+
+// After the mode, the player picks one of five difficulties. This scales every
+// trainer they will fight: AI sharpness, levels, and how well built the enemy
+// Pokemon are (see ApplyDifficultyToTrainerMon / the AI flag override).
+static const u8 sText_OakSpeech_AskDifficulty[] = _("And how fierce should\nyour rivals be?");
+static const u8 sText_Difficulty_Easy[]     = _("EASY");
+static const u8 sText_Difficulty_Normal[]   = _("NORMAL");
+static const u8 sText_Difficulty_Hard[]     = _("HARD");
+static const u8 sText_Difficulty_Brutal[]   = _("BRUTAL");
+static const u8 sText_Difficulty_Champion[] = _("AW SHIBAL GAY BBAKSAY");
+
+static const u8 *const sDifficultyNames[DIFFICULTY_COUNT] =
+{
+    [DIFFICULTY_EASY]     = sText_Difficulty_Easy,
+    [DIFFICULTY_NORMAL]   = sText_Difficulty_Normal,
+    [DIFFICULTY_HARD]     = sText_Difficulty_Hard,
+    [DIFFICULTY_BRUTAL]   = sText_Difficulty_Brutal,
+    [DIFFICULTY_CHAMPION] = sText_Difficulty_Champion,
+};
+
+static void Task_OakSpeech_AskDifficulty(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    ClearStdWindowAndFrameToTransparent(tMenuWindowId, TRUE);
+    RemoveWindow(tMenuWindowId);
+    OakSpeechPrintMessage(sText_OakSpeech_AskDifficulty, sOakSpeechResources->textSpeed);
+    gTasks[taskId].func = Task_OakSpeech_ShowDifficultyOptions;
+}
+
+static void Task_OakSpeech_ShowDifficultyOptions(u8 taskId)
+{
+    if (!IsTextPrinterActive(WIN_INTRO_TEXTBOX))
+    {
+        u8 i;
+        u8 rowHeight = GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_HEIGHT) + 2;
+
+        gTasks[taskId].tMenuWindowId = AddWindow(&sIntro_WindowTemplates[WIN_INTRO_DIFFICULTY]);
+        PutWindowTilemap(gTasks[taskId].tMenuWindowId);
+        DrawStdFrameWithCustomTileAndPalette(gTasks[taskId].tMenuWindowId, TRUE, GetStdWindowBaseTileNum(), 14);
+        FillWindowPixelBuffer(gTasks[taskId].tMenuWindowId, PIXEL_FILL(1));
+        for (i = 0; i < DIFFICULTY_COUNT; i++)
+        {
+            sOakSpeechResources->textColor[0] = 1;
+            sOakSpeechResources->textColor[1] = 2;
+            sOakSpeechResources->textColor[2] = 3;
+            AddTextPrinterParameterized3(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 8,
+                                         1 + i * rowHeight, sOakSpeechResources->textColor, 0,
+                                         sDifficultyNames[i]);
+        }
+        Menu_InitCursor(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 0, 1, rowHeight, DIFFICULTY_COUNT, 0);
+        CopyWindowToVram(gTasks[taskId].tMenuWindowId, COPYWIN_FULL);
+        gTasks[taskId].func = Task_OakSpeech_HandleDifficultyInput;
+    }
+}
+
+static void Task_OakSpeech_HandleDifficultyInput(u8 taskId)
+{
+    s8 input = Menu_ProcessInputNoWrapAround();
+
+    if (input == MENU_B_PRESSED || input == MENU_NOTHING_CHOSEN)
+        return;
+    if (input < 0 || input >= DIFFICULTY_COUNT)
+        return;
+    gSaveBlock2Ptr->difficulty = input;
     gTasks[taskId].func = Task_OakSpeech_ClearGenderWindows;
 }
 

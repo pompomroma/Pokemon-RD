@@ -1,4 +1,5 @@
 #include "global.h"
+#include "difficulty.h"
 #include "battle.h"
 #include "battle_anim.h"
 #include "util.h"
@@ -357,7 +358,8 @@ void BattleAI_SetupAIData(void)
         AI_THINKING_STRUCT->aiFlags = (AI_SCRIPT_CHECK_BAD_MOVE | AI_SCRIPT_TRY_TO_FAINT | AI_SCRIPT_CHECK_VIABILITY);
         return;
     }
-    AI_THINKING_STRUCT->aiFlags = gTrainers[gTrainerBattleOpponent_A].aiFlags;
+    // Difficulty sharpens every trainer's AI (see src/difficulty.c).
+    AI_THINKING_STRUCT->aiFlags = Difficulty_ApplyAiFlags(gTrainers[gTrainerBattleOpponent_A].aiFlags);
 }
 
 u8 BattleAI_ChooseMoveOrAction(void)

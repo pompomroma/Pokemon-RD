@@ -484,6 +484,75 @@ void Fusion_SetSignatureMoveDynamics(u8 battler)
                                                 Fusion_GetMonEffectiveStage(&mon->box));
 }
 
+// --- fused sprite compositing -------------------------------------------
+// Mon pics are 64x64 4bpp, stored as a linear run of 8x8 tiles (8 across).
+// Two pixels per byte: low nibble = even x, high nibble = odd x.
+static u8 GetPicPixel(const u8 *pic, u8 x, u8 y)
+{
+    u32 off = ((y >> 3) * 8 + (x >> 3)) * 32 + (y & 7) * 4 + ((x & 7) >> 1);
+
+    return (x & 1) ? (pic[off] >> 4) : (pic[off] & 0xF);
+}
+
+static void SetPicPixel(u8 *pic, u8 x, u8 y, u8 value)
+{
+    u32 off = ((y >> 3) * 8 + (x >> 3)) * 32 + (y & 7) * 4 + ((x & 7) >> 1);
+
+    if (x & 1)
+        pic[off] = (pic[off] & 0x0F) | (value << 4);
+    else
+        pic[off] = (pic[off] & 0xF0) | value;
+}
+
+// A gentle wave across the body, so the join between the two Pokemon follows an
+// organic contour instead of a dead-straight line. Indexed by tile column.
+static const s8 sFusionSeamWave[8] = { 0, 3, 5, 4, 1, -3, -5, -3 };
+
+#define FUSION_SEAM_Y     32  // nominal waist of a 64px pic
+#define FUSION_SEAM_BLEND  3  // rows either side of the seam that interlock
+
+// Builds the fused body: the partner supplies the upper form, the base supplies
+// the lower, joined along a waving seam. Inside the seam band the two are
+// interlocked and whichever side actually has a pixel wins, so the silhouette
+// stays solid instead of showing the hard horizontal cut the old splice left.
+static void FuseMonPicPixels(void *destPic, const void *partnerPic)
+{
+    u8 *base = destPic;
+    const u8 *partner = partnerPic;
+    u8 x, y;
+
+    for (x = 0; x < MON_PIC_WIDTH; x++)
+    {
+        s16 seam = FUSION_SEAM_Y + sFusionSeamWave[(x >> 3) & 7];
+
+        for (y = 0; y < MON_PIC_HEIGHT; y++)
+        {
+            u8 fromPartner = GetPicPixel(partner, x, y);
+            u8 fromBase = GetPicPixel(base, x, y);
+            s16 d = (s16)y - seam;
+
+            if (d < -FUSION_SEAM_BLEND)
+            {
+                // Well above the seam: partner's body, but never punch a hole
+                // through the base's silhouette.
+                SetPicPixel(base, x, y, fromPartner != 0 ? fromPartner : fromBase);
+            }
+            else if (d <= FUSION_SEAM_BLEND)
+            {
+                // Interlocking band: alternate ownership per pixel so the two
+                // bodies mesh, and always prefer a solid pixel over empty space.
+                bool8 partnerTurn = (((x + y) & 1) == 0) ? (d <= 0) : (d < 0);
+
+                if (partnerTurn)
+                    SetPicPixel(base, x, y, fromPartner != 0 ? fromPartner : fromBase);
+                else if (fromBase == 0 && fromPartner != 0)
+                    SetPicPixel(base, x, y, fromPartner);
+            }
+            // Below the seam the base pic is already in place: nothing to do.
+        }
+    }
+}
+
 void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic)
 {
     struct FusionRecord *rec = Fusion_FindRecordByPersonality(personality);
@@ -506,9 +575,7 @@ void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic)
         LZ77UnCompWram(gMonBackPicTable[partner].data, buffer);
     if (partner == SPECIES_DEOXYS)
         CpuCopy32(buffer + 0x800, buffer, 0x800);
-    // Splice the partner's top half (first 4 rows of 8x8 tiles) onto the
-    // base Pokémon's bottom half.
-    memcpy(dest, buffer, MON_PIC_SIZE / 2);
+    FuseMonPicPixels(dest, buffer);
     Free(buffer);
 }
 

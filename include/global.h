@@ -375,7 +375,8 @@ struct SaveBlock2
     /*0xB10*/ struct BerryPickingResults berryPick;
     /*0xB20*/ u32 randomizerSeed;   // seed for the deterministic species remap
     /*0xB24*/ u8 randomizerMode;    // 0 = normal, 1 = randomizer
-    /*0xB25*/ u8 filler_B25[0x3];
+    /*0xB25*/ u8 difficulty;        // DIFFICULTY_* (0 = EASY .. 4 = hardest)
+    /*0xB26*/ u8 filler_B26[0x2];
     /*0xB28*/ struct StatCustomRecord statCustom[STAT_CUSTOM_RECORDS_COUNT]; // 48 * 16 = 0x300
     /*0xE28*/ u16 coopCode;          // this save's own 4-digit co-op group code (0..9999)
     /*0xE2A*/ u16 coopJoinedCode;    // the code the player entered to join a group (0 = none)
