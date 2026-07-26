@@ -5,6 +5,7 @@
 #include "new_menu_helpers.h"
 #include "quest_log.h"
 #include "fieldmap.h"
+#include "constants/map_types.h"
 
 struct ConnectionFlags
 {
@@ -882,6 +883,27 @@ void ApplyGlobalTintToPaletteSlot(u8 slot, u8 count)
     CpuFastCopy(&gPlttBufferUnfaded[BG_PLTT_ID(slot)], &gPlttBufferFaded[BG_PLTT_ID(slot)], count * PLTT_SIZE_4BPP);
 }
 
+// How much sun the map being loaded should receive. gMapHeader is already set
+// by the time tileset palettes load (every LoadMapTilesetPalettes caller passes
+// gMapHeader.mapLayout), so the map's own type decides this.
+static u8 MapSunlightStrength(void)
+{
+    switch (gMapHeader.mapType)
+    {
+    case MAP_TYPE_TOWN:
+    case MAP_TYPE_CITY:
+    case MAP_TYPE_ROUTE:
+    case MAP_TYPE_OCEAN_ROUTE:
+        return SUNLIGHT_FULL;
+    case MAP_TYPE_INDOOR:
+    case MAP_TYPE_SECRET_BASE:
+        return SUNLIGHT_SOFT;
+    default:
+        // Caves and anything unclassified: no sun reaches here.
+        return SUNLIGHT_NONE;
+    }
+}
+
 // Apply the cinematic "heavy shader" grade to freshly-loaded map palettes,
 // but leave Quest Log playback (grayscale/sepia) untouched.
 static void GradeFieldPalette(u16 offset, u16 count)
@@ -889,6 +911,11 @@ static void GradeFieldPalette(u16 offset, u16 count)
     if (gGlobalFieldTintMode != QL_TINT_NONE)
         return;
     GradePalette_Cinematic(&gPlttBufferUnfaded[offset], count);
+    // Map tilesets get a second pass the rest of the game does not: directional
+    // sunlight, so lit surfaces separate from shaded ones instead of the whole
+    // map sharing one flat warm tint. How much depends on where the map is --
+    // full sun outdoors, diffuse indoors, none at all underground.
+    GradePalette_Sunlight(&gPlttBufferUnfaded[offset], count, MapSunlightStrength());
     CpuCopy16(&gPlttBufferUnfaded[offset], &gPlttBufferFaded[offset], PLTT_SIZEOF(count));
 }
 

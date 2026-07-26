@@ -81,6 +81,17 @@ void TintPalette_GrayScale2(u16 *palette, u16 count);
 void TintPalette_SepiaTone(u16 *palette, u16 count);
 void TintPalette_CustomTone(u16 *palette, u16 count, u16 rTone, u16 gTone, u16 bTone);
 void GradePalette_Cinematic(u16 *palette, u16 count);
+
+// How much sun a map gets. Underground maps pass SUNLIGHT_NONE and are left
+// alone; indoor maps get a diffuse half-strength version; outdoor maps get the
+// full directional treatment.
+#define SUNLIGHT_NONE 0
+#define SUNLIGHT_SOFT 1
+#define SUNLIGHT_FULL 2
+
+// Overworld map tilesets only: directional sunlight + sun glint, layered on top
+// of the cinematic grade. See the definition for why it is field-only.
+void GradePalette_Sunlight(u16 *palette, u16 count, u8 strength);
 void GradePalette_BattleSprite(u16 *palette, u16 count);
 // Apply the cinematic grade to `count` already-loaded palette entries starting
 // at `offset`, updating both the unfaded and faded buffers so it composes under

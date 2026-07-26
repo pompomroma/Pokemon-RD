@@ -933,6 +933,104 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
             g += (29 - g) * bloom >> 6;
             b += (23 - b) * bloom >> 6;
         }
+        // LUSTER. The bloom above is the ambient sunlit wash and lifts a wide
+        // band of tones together, which on its own reads as "brighter paint"
+        // rather than a polished surface. Lustre comes from SEPARATION, so the
+        // upper midtones are held back a touch while the true highlights are
+        // driven hard toward warm white. The result is a distinct glint sitting
+        // on top of the wash -- surfaces read as glossy instead of merely bright.
+        if (luma >= 20 && luma <= 25)
+        {
+            r = r * 61 >> 6; // ~x0.95, deepens the shoulder under the glint
+            g = g * 61 >> 6;
+            b = b * 61 >> 6;
+        }
+        else if (luma > 25)
+        {
+            s32 spec = luma - 25; // 1..6
+            r += (31 - r) * spec >> 5;
+            g += (31 - g) * spec >> 5;
+            b += (27 - b) * spec >> 6; // blue lags, so the glint stays golden
+        }
+        palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
+    }
+}
+
+// An extra sunlight pass applied ONLY to overworld map tileset palettes, on top
+// of the cinematic grade. The cinematic grade tints everything uniformly warm,
+// which lights the scene but flattens it -- nothing tells you where the sun is.
+// This adds direction: a colour that is already warm is treated as a surface
+// facing the sun and lifted further, while a cool colour is treated as shade and
+// pushed cooler and slightly darker. Sunlit roofs, paths and grass then separate
+// from the shade beside them, and the brightest tones pick up a tight golden
+// sparkle, so the map reads as lit by something rather than washed in a filter.
+//
+// `strength` makes the light behave like real sunlight rather than a blanket
+// filter: SUNLIGHT_FULL outdoors where the sun is overhead, SUNLIGHT_SOFT
+// indoors where it only arrives through windows, and the caller skips the pass
+// entirely underground, where there is no sun to model.
+void GradePalette_Sunlight(u16 *palette, u16 count, u8 strength)
+{
+    s32 i;
+
+    if (strength == SUNLIGHT_NONE)
+        return;
+
+    for (i = 0; i < count; i++)
+    {
+        s32 r = GET_R(palette[i]);
+        s32 g = GET_G(palette[i]);
+        s32 b = GET_B(palette[i]);
+        s32 luma = (r * 77 + g * 151 + b * 28) >> 8;
+        s32 warmth = r - b; // >0 = sun-facing, <0 = in shade
+
+        if (warmth > 2)
+        {
+            // Sunlit: lift toward the light. Capped so already-warm art (fire,
+            // red roofs) does not blow out to a flat orange.
+            s32 lift = (warmth > 10) ? 10 : warmth;
+
+            if (strength == SUNLIGHT_FULL)
+            {
+                r += (31 - r) * lift >> 6;
+                g += (30 - g) * lift >> 7;
+            }
+            else
+            {
+                // Indoors the light is bounced and diffuse, so warm surfaces
+                // still catch it, but at roughly half strength.
+                r += (31 - r) * lift >> 7;
+            }
+        }
+        else if (warmth < -2 && strength == SUNLIGHT_FULL)
+        {
+            // Shade: cooler and a little deeper, so the contrast against the
+            // sunlit tones is visible. This is what makes the light read as
+            // directional rather than ambient. Skipped indoors -- there is no
+            // single sun direction to cast it.
+            r = r * 61 >> 6; // ~x0.95
+            g = g * 62 >> 6;
+            b = b * 66 >> 6; // ~x1.03
+        }
+        // Sun glint on the very top of the ramp -- roof edges, path stones,
+        // water crests. Tighter and stronger than the global specular so the
+        // map sparkles where the light actually catches. Indoors it is a much
+        // softer sheen on polished floors rather than a sparkle.
+        if (luma > 26)
+        {
+            s32 spec = luma - 26; // 1..5
+
+            if (strength == SUNLIGHT_FULL)
+            {
+                r += (31 - r) * spec >> 3;
+                g += (31 - g) * spec >> 4;
+            }
+            else
+            {
+                r += (31 - r) * spec >> 5;
+                g += (31 - g) * spec >> 5;
+            }
+        }
         palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
     }
 }
