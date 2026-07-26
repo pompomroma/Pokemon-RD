@@ -7,7 +7,28 @@ import re, os
 from PIL import Image, ImageFont, ImageDraw
 
 ROOT = "/home/user/Pokemon-RD"
-PNG = os.path.join(ROOT, "graphics/fonts/latin_normal.png")
+
+# Every font that Korean text can be printed with needs its OWN copy of the
+# glyphs, because each font id reads a different .fwlatfont and a different
+# width table. The dialogue box picks the font by who is speaking
+# (new_menu_helpers.c DrawDialogueFrame path: FONT_MALE / FONT_FEMALE /
+# FONT_NORMAL) and Oak's speech is always FONT_MALE (oak_speech.c), so baking
+# into latin_normal alone left every male/female line as blank spaces of the
+# right width. FONT_NORMAL and FONT_NORMAL_COPY_1 share latin_normal.fwlatfont
+# but have separate width tables, so that sheet patches two tables.
+FONT_TARGETS = [
+    ("graphics/fonts/latin_normal.png",
+     ["sFontNormalLatinGlyphWidths", "sFontNormalCopy1LatinGlyphWidths"]),
+    ("graphics/fonts/latin_male.png",
+     ["sFontMaleLatinGlyphWidths"]),
+    ("graphics/fonts/latin_female.png",
+     ["sFontFemaleLatinGlyphWidths"]),
+]
+# FONT_SMALL (latin_small.hwlatfont) is deliberately not included: it is a
+# half-width 8px font used only for English hint lines ("PICK SWITCH CANCEL",
+# the language-select footer), and Hangul is illegible at 8px.
+
+PNG = os.path.join(ROOT, FONT_TARGETS[0][0])
 TEXTC = os.path.join(ROOT, "src/text.c")
 HDR = os.path.join(ROOT, "include/korean_ui_strings.h")
 FONT = "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"
@@ -188,63 +209,91 @@ assert len(order) <= (0x200 - FIRST_GLYPH), "too many syllables for free slots"
 glyph_of = {ch: FIRST_GLYPH + i for i, ch in enumerate(order)}
 print("unique glyphs:", len(order), "-> glyphs 0x%X..0x%X" % (FIRST_GLYPH, FIRST_GLYPH+len(order)-1))
 
-# --- render into the PNG ---------------------------------------------------
-im = Image.open(PNG)
-assert im.mode == "P" and im.size == (256, 512), (im.mode, im.size)
-px = im.load()
+# --- render into every font sheet -------------------------------------------
+# The cell in the sheet is 16px tall, but the engine only ever DRAWS 14 rows:
+# DecompressGlyph_Normal/_Male/_Female set gGlyphInfo.height = 14 and
+# CopyGlyphToWindow clips to it (src/text.c, src/text_printer.c). Anything the
+# generator puts on rows 14-15 is silently thrown away, which for Hangul means
+# losing the bottom of the final consonant (받침) and turning 각 into 가. So the
+# glyph is sized and centred to fit the drawable 14 rows, not the full cell.
+CELL_H = 16
+DRAW_H = 14
+
 _font_cache = {}
 def _font_for(ch):
     path = font_path_of[ch]
     if path not in _font_cache:
-        # CJK kanji/hanzi need a slightly smaller size to fit a 16x16 cell.
-        size = 14 if path == FONT_CJK else 15
+        # Sized to fit DRAW_H rows; CJK hanzi are denser and need one less.
+        size = 13 if path == FONT_CJK else 14
         _font_cache[path] = ImageFont.truetype(path, size)
     return _font_cache[path]
 
-def render_cell(ch, gid):
+def render_cell(px, ch, gid):
     font = _font_for(ch)
     col, row = gid % 16, gid // 16
-    ox, oy = col * 16, row * 16
-    # clear the 16x16 cell
-    for y in range(16):
+    ox, oy = col * 16, row * CELL_H
+    # clear the whole cell
+    for y in range(CELL_H):
         for x in range(16):
             px[ox + x, oy + y] = 0
     # rasterize the syllable to a small grayscale then threshold to index 1
-    tmp = Image.new("L", (16, 16), 0)
+    tmp = Image.new("L", (16, CELL_H), 0)
     d = ImageDraw.Draw(tmp)
     bbox = d.textbbox((0, 0), ch, font=font)
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
     dx = (16 - w) // 2 - bbox[0]
-    dy = (16 - h) // 2 - bbox[1]
+    # Centre within the drawable rows only, and never let ink start so low that
+    # the tail falls past row DRAW_H-1.
+    dy = (DRAW_H - h) // 2 - bbox[1]
+    if dy + bbox[1] + h > DRAW_H:
+        dy = DRAW_H - h - bbox[1]
+    if dy + bbox[1] < 0:
+        dy = -bbox[1]
     d.text((dx, dy), ch, fill=255, font=font)
     tp = tmp.load()
-    for y in range(16):
+    for y in range(DRAW_H):          # rows 14-15 would be clipped away anyway
         for x in range(16):
             if tp[x, y] >= 110:      # ink threshold
                 px[ox + x, oy + y] = 1
 
-for ch, gid in glyph_of.items():
-    render_cell(ch, gid)
-im.save(PNG)
-print("wrote", PNG)
+for rel, _tables in FONT_TARGETS:
+    path = os.path.join(ROOT, rel)
+    sheet = Image.open(path)
+    assert sheet.mode == "P" and sheet.size == (256, 512), (rel, sheet.mode, sheet.size)
+    spx = sheet.load()
+    # Wipe every slot we own first. An earlier run may have used more glyphs
+    # than this one, and leftover ink in a now-unreferenced slot would sit in
+    # the sheet forever.
+    for gid in range(FIRST_GLYPH, 0x200):
+        ox, oy = (gid % 16) * 16, (gid // 16) * CELL_H
+        for y in range(CELL_H):
+            for x in range(16):
+                spx[ox + x, oy + y] = 0
+    for ch, gid in glyph_of.items():
+        render_cell(spx, ch, gid)
+    sheet.save(path)
+    print("wrote", path)
 
-# --- update the width table -------------------------------------------------
+# --- update the width tables ------------------------------------------------
 txt = open(TEXTC).read()
-m = re.search(r'(static const u8 sFontNormalLatinGlyphWidths\[\]\s*=\s*\{)(.*?)(\};)', txt, re.S)
-nums = re.findall(r'-?\d+', m.group(2))
-assert len(nums) == 512, len(nums)
-nums = [int(n) for n in nums]
-for gid in glyph_of.values():
-    nums[gid] = GLYPH_W
-# re-emit 16 per line
-lines = []
-for i in range(0, 512, 16):
-    lines.append("    " + ", ".join(str(n) for n in nums[i:i+16]) + ",")
-newbody = "\n" + "\n".join(lines) + "\n"
-txt = txt[:m.start()] + m.group(1) + newbody + m.group(3) + txt[m.end():]
+for _rel, tables in FONT_TARGETS:
+    for table in tables:
+        m = re.search(r'(static const u8 ' + table + r'\[\]\s*=\s*\{)(.*?)(\};)', txt, re.S)
+        assert m, "width table not found: " + table
+        nums = re.findall(r'-?\d+', m.group(2))
+        assert len(nums) == 512, (table, len(nums))
+        nums = [int(n) for n in nums]
+        for gid in glyph_of.values():
+            nums[gid] = GLYPH_W
+        # re-emit 16 per line
+        lines = []
+        for i in range(0, 512, 16):
+            lines.append("    " + ", ".join(str(n) for n in nums[i:i + 16]) + ",")
+        newbody = "\n" + "\n".join(lines) + "\n"
+        txt = txt[:m.start()] + m.group(1) + newbody + m.group(3) + txt[m.end():]
+        print("patched width table", table)
 open(TEXTC, "w").write(txt)
-print("patched width table in", TEXTC)
 
 # --- emit the C header ------------------------------------------------------
 def to_bytes(s):
