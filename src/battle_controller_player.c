@@ -521,7 +521,19 @@ void HandleInputChooseMove(void)
     if (JOY_NEW(START_BUTTON))
     {
         if (Gimmick_TryStartFormChange(gActiveBattler))
-            MoveSelectionDisplayMoveType();
+        {
+            // Name the form that fired (KRYPTON!/G-MAX!/MEGA!/...) in the
+            // move-info window; it reverts to the usual info on the next input.
+            const u8 *name = Gimmick_GetFormChangeName();
+            u8 *txtPtr = gDisplayedStringBattle;
+
+            *txtPtr++ = EXT_CTRL_CODE_BEGIN;
+            *txtPtr++ = 6;
+            *txtPtr++ = 1;
+            txtPtr = StringCopy(txtPtr, gText_MoveInterfaceDynamicColors);
+            StringCopy(txtPtr, name != NULL ? name : gText_MoveInterfaceDynamicColors);
+            BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_TYPE);
+        }
         return;
     }
     // Z-MOVE 5th slot. When focused, A unleashes it (arm + point the cursor at

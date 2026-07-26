@@ -47,4 +47,14 @@ void Gimmick_EndTurnDynamaxCountdown(void);
 // Returns TRUE if a form change fired this call.
 bool8 Gimmick_TryStartFormChange(u8 battler);
 
+// KRYPTON EVOLUTION: the top form change, x4 to every stat. Only a fused
+// Pokemon built from a Mega Stone holder + a Dyna Band holder qualifies (both
+// items live in the fusion record, so its real item slot is still free to hold
+// a Z Crystal).
+bool8 Gimmick_CanKryptonEvolve(u8 battler);
+
+// Short label of the form that just triggered ("KRYPTON!", "MEGA!", ...), shown
+// in the move-info window so the player sees which form fired.
+const u8 *Gimmick_GetFormChangeName(void);
+
 #endif // GUARD_BATTLE_GIMMICKS_H

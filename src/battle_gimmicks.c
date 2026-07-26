@@ -262,11 +262,34 @@ static const u16 sFormTypeColors[] =
     [TYPE_DARK]     = RGB2(14, 10, 16),
 };
 
+// Names shown in the move-info window when a form change fires, so the player
+// can see which form they triggered.
+static const u8 sText_FormKrypton[] = _("KRYPTON!");
+static const u8 sText_FormGiga[]    = _("G-MAX!");
+static const u8 sText_FormMega[]    = _("MEGA!");
+static const u8 sText_FormDyna[]    = _("DYNAMAX!");
+static const u8 sText_FormAwaken[]  = _("AWAKEN!");
+
+static const u8 *sLastFormName = NULL;
+
+const u8 *Gimmick_GetFormChangeName(void)
+{
+    return sLastFormName;
+}
+
+bool8 Gimmick_CanKryptonEvolve(u8 battler)
+{
+    // KRYPTON EVOLUTION is reserved for a fused Pokemon built from one holder of
+    // a Mega Stone and one holder of a Dyna Band -- both items are kept in the
+    // fusion record, which leaves the real item slot free for a Z Crystal.
+    return IsBattlerFused(battler) && HasBothMegaAndDyna(battler);
+}
+
 bool8 Gimmick_TryStartFormChange(u8 battler)
 {
     u16 color, num;
     u8 type;
-    bool8 fused, mega, dyna, zc, both;
+    bool8 fused, mega, dyna, zc, krypton;
 
     if (gBattleMons[battler].hp == 0)
         return FALSE;
@@ -278,15 +301,15 @@ bool8 Gimmick_TryStartFormChange(u8 battler)
     dyna = HasArtifact(battler, ITEM_DYNA_BAND);
     zc = HasArtifact(battler, ITEM_Z_CRYSTAL);
     fused = IsBattlerFused(battler);
-    both = mega && dyna; // a fused mon carrying both forms
+    krypton = fused && mega && dyna;
     if (!mega && !dyna && !zc && !fused)
         return FALSE; // nothing to transform into
 
     gBattleStruct->formChanged |= gBitTable[battler];
 
-    // A fused mon that stored BOTH a Mega Stone and a Dyna Band gets the biggest
-    // boost of all (x3 every stat); anything else gets a huge x2.
-    num = both ? 3 : 2;
+    // KRYPTON EVOLUTION quadruples every stat. Every other form keeps the huge
+    // x2 it already had.
+    num = krypton ? 4 : 2;
     gBattleMons[battler].attack    = MultiplyStat(gBattleMons[battler].attack, num, 1);
     gBattleMons[battler].defense   = MultiplyStat(gBattleMons[battler].defense, num, 1);
     gBattleMons[battler].speed     = MultiplyStat(gBattleMons[battler].speed, num, 1);
@@ -297,16 +320,37 @@ bool8 Gimmick_TryStartFormChange(u8 battler)
     if (gBattleMons[battler].hp > gBattleMons[battler].maxHP)
         gBattleMons[battler].hp = gBattleMons[battler].maxHP;
 
-    // "Cooler look" recolor. The both-forms fusion gets a unique radiant
-    // white-gold double blend; every other form is tinted by the mon's type so
-    // each transformation looks different.
-    if (both)
+    // Each form gets its own look rather than one shared recolor:
+    //   KRYPTON    radiant white-gold, brightest of all
+    //   GIGANTAMAX deep violet swell (a fused Dyna Band holder)
+    //   DYNAMAX    heavy crimson
+    //   MEGA       hard bright rim, keeping the mon's own colours readable
+    //   otherwise  tinted by the mon's primary type, so species still differ
+    if (krypton)
     {
-        BlendPalette(OBJ_PLTT_ID(battler), 16, 6, RGB2(31, 31, 31)); // brighten
-        BlendPalette(OBJ_PLTT_ID(battler), 16, 8, RGB2(31, 24, 12)); // radiant gold
+        sLastFormName = sText_FormKrypton;
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 8, RGB2(31, 31, 31)); // blazing core
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 9, RGB2(31, 26, 10)); // radiant gold
+    }
+    else if (dyna && fused)
+    {
+        sLastFormName = sText_FormGiga;
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 10, RGB2(20, 6, 28));
+    }
+    else if (dyna)
+    {
+        sLastFormName = sText_FormDyna;
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 10, RGB2(30, 6, 8));
+    }
+    else if (mega)
+    {
+        sLastFormName = sText_FormMega;
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 5, RGB2(31, 31, 31)); // rim lift
+        BlendPalette(OBJ_PLTT_ID(battler), 16, 6, RGB2(16, 24, 31)); // cool mega sheen
     }
     else
     {
+        sLastFormName = sText_FormAwaken;
         type = gBattleMons[battler].type1;
         color = (type < ARRAY_COUNT(sFormTypeColors)) ? sFormTypeColors[type] : RGB2(28, 20, 31);
         BlendPalette(OBJ_PLTT_ID(battler), 16, 9, color);
