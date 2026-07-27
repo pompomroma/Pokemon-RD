@@ -915,13 +915,15 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
         r = r * 35 >> 5; // ~x1.09
         g = g * 33 >> 5; // ~x1.03
         b = b * 29 >> 5; // ~x0.91
-        // Keep shadows deep and grounded, but WARM (amber), not teal — sunlight's
-        // own shadows stay warm.
-        if (luma < 10)
+        // Shadows stay WARM (amber, not teal — sunlight's own shadows are warm)
+        // but are no longer crushed: the old x0.94/x0.91/x0.84 pulled the bottom
+        // end down far enough to read as murk. Only the very darkest tones are
+        // shaped now, and gently, so dark areas keep their detail.
+        if (luma < 8)
         {
-            r = r * 30 >> 5;
-            g = g * 29 >> 5;
-            b = b * 27 >> 5;
+            r = r * 34 >> 5;
+            g = g * 33 >> 5;
+            b = b * 31 >> 5;
         }
         // Smooth warm bloom: a low threshold and a gentle ramp give a soft glow
         // that blooms toward warm white (gold), for the heavy sunlit feel and a
@@ -933,16 +935,16 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
             g += (29 - g) * bloom >> 6;
             b += (23 - b) * bloom >> 6;
         }
-        // LUSTER, pushed to the maximum the 5-bit channels will carry. Lustre
-        // comes from SEPARATION, not brightness: the shoulder under the glint is
-        // driven down hard while the true highlights are slammed to white, so
-        // the gap between them is as wide as the format allows. Anything more
-        // and the highlights clip flat and the glint stops reading as a glint.
+        // LUSTER. Lustre comes from SEPARATION, so a shoulder still sits under
+        // the glint -- but the old x0.81 was dragging the whole upper midtone
+        // range down, which is what made the game read dark. At ~x0.97 the
+        // separation is still there (the squared highlight ramp below is what
+        // actually produces the glint) without the murk.
         if (luma >= 19 && luma <= 24)
         {
-            r = r * 52 >> 6; // ~x0.81, a deep shoulder for the glint to sit on
-            g = g * 52 >> 6;
-            b = b * 51 >> 6;
+            r = r * 62 >> 6; // ~x0.97, a light shoulder for the glint to sit on
+            g = g * 62 >> 6;
+            b = b * 62 >> 6;
         }
         else if (luma > 24)
         {
@@ -963,6 +965,13 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
                 b = ClampChannel(b + 6);
             }
         }
+        // Gentle global lift, applied last. Because it scales the *headroom*
+        // left in each channel, dark and mid tones gain the most while
+        // highlights -- already at or near clipping -- barely move, so the
+        // picture brightens without the specular core flattening out.
+        r += (31 - r) * 5 >> 6;
+        g += (31 - g) * 5 >> 6;
+        b += (31 - b) * 5 >> 6;
         palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
     }
 }
@@ -1092,6 +1101,12 @@ void GradePalette_BattleSprite(u16 *palette, u16 count)
             g += (30 - g) >> 3;
             b += (26 - b) >> 3;
         }
+        // The same headroom lift the world grade gets. Without it the world
+        // would brighten around the battlers and they would read as flat and
+        // dark against it, losing the lit-foreground separation.
+        r += (31 - r) * 5 >> 6;
+        g += (31 - g) * 5 >> 6;
+        b += (31 - b) * 5 >> 6;
         palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
     }
 }
