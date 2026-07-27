@@ -1230,9 +1230,15 @@ static void Cmd_damagecalc(void)
     {
         u8 moveType = gBattleStruct->dynamicMoveType ? (gBattleStruct->dynamicMoveType & 0x3F)
                                                      : gBattleMoves[gCurrentMove].type;
+        // The fusion signature move picks its own side, so tally what it really
+        // used rather than what its type would imply.
+        bool8 physical = (gCurrentMove == MOVE_FUSION_BURST)
+                       ? Fusion_BurstUsesPhysical(&gBattleMons[gBattlerAttacker])
+                       : IS_TYPE_PHYSICAL(moveType);
+
         MoveStyle_RecordUse(GetMonData(&gPlayerParty[gBattlerPartyIndexes[gBattlerAttacker]],
                                        MON_DATA_PERSONALITY, NULL),
-                            IS_TYPE_PHYSICAL(moveType));
+                            physical);
     }
 
     gBattlescriptCurrInstr++;

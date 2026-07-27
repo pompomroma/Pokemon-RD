@@ -44,6 +44,9 @@ u16 Fusion_FuseBaseStatPair(u16 statA, u16 statB);
 u8 Fusion_GetBaseStat(u16 species, u16 partnerSpecies, u8 statIndex);
 void Fusion_GetTypes(u16 species, u16 partnerSpecies, u8 *type1, u8 *type2);
 void Fusion_BuildFusedName(u16 speciesA, u16 speciesB, u8 *dest);
+// TRUE if MOVE_FUSION_BURST should hit off Attack/Defense rather than
+// Sp. Atk/Sp. Def for this battler -- it always uses the fusion's better side.
+bool8 Fusion_BurstUsesPhysical(struct BattlePokemon *attacker);
 u8 Fusion_GetSignatureMoveType(u16 species, u16 partnerSpecies);
 u8 Fusion_GetSignatureMovePower(u16 species, u16 partnerSpecies);
 void Fusion_BuildSignatureMoveName(u16 species, u16 partnerSpecies, u8 *dest);

@@ -8,6 +8,7 @@
 #include "pokemon_fusion.h"
 #include "deoxys_forms.h"
 #include "pokemon_storage_system.h"
+#include "trig.h"
 #include "item.h"
 #include "constants/items.h"
 #include "constants/moves.h"
@@ -21,8 +22,9 @@
 //                 secondary if the primaries match)
 //  - nickname:    front half of the base species' name + back half of the
 //                 partner species' name
-//  - sprite:      partner's top half spliced onto the base mon's bottom
-//                 half, with both palettes blended 50/50
+//  - sprite:      the base mon's silhouette carrying the partner's markings
+//                 and crest, with both palettes blended 50/50 (see
+//                 FuseMonPicPixels -- deliberately NOT a half-and-half splice)
 //  - signature:   MOVE_FUSION_BURST, whose displayed name, type, and power
 //                 are generated from the pair at runtime
 
@@ -235,6 +237,16 @@ static u8 GetOffensiveBaseStat(u16 species)
     u8 spAtk = gSpeciesInfo[species].baseSpAttack;
 
     return atk > spAtk ? atk : spAtk;
+}
+
+// MOVE_FUSION_BURST strikes with whichever offence the fusion is actually
+// better at, rather than being locked to physical or special by its rolled
+// type. Compared on the mon's own Attack and Sp. Atk, so it is predictable from
+// the summary screen; ties go to Attack. The matching defensive stat is used
+// against it, so the exchange stays fair either way.
+bool8 Fusion_BurstUsesPhysical(struct BattlePokemon *attacker)
+{
+    return attacker->attack >= attacker->spAttack;
 }
 
 u8 Fusion_GetSignatureMoveType(u16 species, u16 partnerSpecies)
@@ -505,53 +517,233 @@ static void SetPicPixel(u8 *pic, u8 x, u8 y, u8 value)
         pic[off] = (pic[off] & 0xF0) | value;
 }
 
-// A gentle wave across the body, so the join between the two Pokemon follows an
-// organic contour instead of a dead-straight line. Indexed by tile column.
-static const s8 sFusionSeamWave[8] = { 0, 3, 5, 4, 1, -3, -5, -3 };
+// --- fusion design ------------------------------------------------------
+//
+// Fusions used to be built by pasting the partner's top half onto the base's
+// bottom half along a wavy seam. However the seam was disguised, the result
+// still read as two Pokemon stuck together: mismatched proportions meeting at
+// the waist, two sets of shoulders, a head sitting on a body that never
+// belonged to it.
+//
+// This builds a single creature instead. The base's silhouette is used whole,
+// so the outline is always a real Pokemon shape with no join anywhere in it.
+// What the partner contributes is its DESIGN rather than its anatomy: the
+// pixels that make it recognisable -- markings, stripes, eye shapes, linework,
+// anything that is not just its bulk body tone -- are stretched to the base's
+// proportions and painted into the base's interior through an organic mask.
+// The partner's crest (horns, ears, fins) is then grafted above the base's
+// head so the fusion still reads as a hybrid at a glance.
+//
+// The palette is already a 50/50 blend of both parents elsewhere in this file,
+// so those transferred markings come out in fused colours automatically.
 
-#define FUSION_SEAM_Y     32  // nominal waist of a 64px pic
-#define FUSION_SEAM_BLEND  3  // rows either side of the seam that interlock
+struct PicBounds
+{
+    u8 minX, minY, maxX, maxY;
+};
 
-// Builds the fused body: the partner supplies the upper form, the base supplies
-// the lower, joined along a waving seam. Inside the seam band the two are
-// interlocked and whichever side actually has a pixel wins, so the silhouette
-// stays solid instead of showing the hard horizontal cut the old splice left.
+// Tight box around the drawn pixels, so two mons of different sizes can be
+// matched up by proportion rather than by raw pixel position.
+static void GetPicBounds(const u8 *pic, struct PicBounds *out)
+{
+    u8 x, y;
+    bool8 found = FALSE;
+
+    out->minX = MON_PIC_WIDTH - 1;
+    out->minY = MON_PIC_HEIGHT - 1;
+    out->maxX = 0;
+    out->maxY = 0;
+    for (y = 0; y < MON_PIC_HEIGHT; y++)
+    {
+        for (x = 0; x < MON_PIC_WIDTH; x++)
+        {
+            if (GetPicPixel(pic, x, y) == 0)
+                continue;
+            found = TRUE;
+            if (x < out->minX) out->minX = x;
+            if (x > out->maxX) out->maxX = x;
+            if (y < out->minY) out->minY = y;
+            if (y > out->maxY) out->maxY = y;
+        }
+    }
+    if (!found) // empty pic: fall back to the whole frame so nothing divides by 0
+    {
+        out->minX = 0;
+        out->minY = 0;
+        out->maxX = MON_PIC_WIDTH - 1;
+        out->maxY = MON_PIC_HEIGHT - 1;
+    }
+}
+
+// The partner's bulk body tone -- its most-used colour. Everything else it is
+// drawn with counts as design worth transferring.
+static u8 GetDominantIndex(const u8 *pic)
+{
+    u16 hist[16] = {0};
+    u8 x, y, i, best = 1;
+    u16 bestCount = 0;
+
+    for (y = 0; y < MON_PIC_HEIGHT; y++)
+    {
+        for (x = 0; x < MON_PIC_WIDTH; x++)
+            hist[GetPicPixel(pic, x, y) & 0xF]++;
+    }
+    for (i = 1; i < 16; i++)
+    {
+        if (hist[i] > bestCount)
+        {
+            bestCount = hist[i];
+            best = i;
+        }
+    }
+    return best;
+}
+
+// TRUE on the rim of the silhouette. The base's own rim is never painted over,
+// which is what keeps the fused sprite's edge crisp and readable.
+static bool8 IsSilhouetteEdge(const u8 *pic, u8 x, u8 y)
+{
+    if (GetPicPixel(pic, x, y) == 0)
+        return FALSE;
+    if (x == 0 || y == 0 || x == MON_PIC_WIDTH - 1 || y == MON_PIC_HEIGHT - 1)
+        return TRUE;
+    return GetPicPixel(pic, x - 1, y) == 0 || GetPicPixel(pic, x + 1, y) == 0
+        || GetPicPixel(pic, x, y - 1) == 0 || GetPicPixel(pic, x, y + 1) == 0;
+}
+
+// Two out-of-phase waves. Large, irregular, soft-edged patches -- markings that
+// look grown rather than stamped, and with no straight edge anywhere.
+static s16 FusionMask(u8 x, u8 y)
+{
+    return 128 + Sin((x * 5 + y * 3) & 0xFF, 62) + Sin((y * 7 - x * 4 + 64) & 0xFF, 42);
+}
+
+// Above this the partner's design shows through. Tuned so roughly a sixth of
+// the body carries partner markings: enough to read as a fusion, little enough
+// that the base still reads as a coherent animal.
+#define FUSION_MARK_THRESHOLD 140
+
+// A lone transferred pixel reads as dirt, so a pixel only transfers if the
+// partner is distinctive around it too.
+#define FUSION_MARK_NEIGHBORS 3
+
+#define FUSION_CREST_ROWS  13  // how far down the partner to look for a crest
+#define FUSION_CREST_HEAD   7  // rows below the crown still counted as "head"
+
 static void FuseMonPicPixels(void *destPic, const void *partnerPic)
 {
     u8 *base = destPic;
     const u8 *partner = partnerPic;
-    u8 x, y;
+    struct PicBounds bb, pb;
+    u8 baseTop[MON_PIC_WIDTH];
+    u8 x, y, i, body, crestRows = 0;
+    u16 bw, bh, pw, ph;
+    u8 crown = MON_PIC_HEIGHT - 1;
 
-    for (x = 0; x < MON_PIC_WIDTH; x++)
+    GetPicBounds(base, &bb);
+    GetPicBounds(partner, &pb);
+    bw = bb.maxX - bb.minX + 1;
+    bh = bb.maxY - bb.minY + 1;
+    pw = pb.maxX - pb.minX + 1;
+    ph = pb.maxY - pb.minY + 1;
+    body = GetDominantIndex(partner);
+
+    // Samples the partner at the same *proportional* spot on its body, so a
+    // small mon's design maps onto a large one without shrinking or clipping.
+    #define WARP_PARTNER(px_, py_)                                            \
+        GetPicPixel(partner,                                                  \
+                    pb.minX + (((px_) - bb.minX) * pw) / bw,                  \
+                    pb.minY + (((py_) - bb.minY) * ph) / bh)
+
+    // --- interior pass: paint the partner's design onto the base's body ---
+    // Only ever writes a non-zero value over an already non-zero pixel, so the
+    // silhouette is bit-for-bit the base's throughout. That invariant is what
+    // lets IsSilhouetteEdge keep working while we write.
+    for (y = bb.minY; y <= bb.maxY; y++)
     {
-        s16 seam = FUSION_SEAM_Y + sFusionSeamWave[(x >> 3) & 7];
-
-        for (y = 0; y < MON_PIC_HEIGHT; y++)
+        for (x = bb.minX; x <= bb.maxX; x++)
         {
-            u8 fromPartner = GetPicPixel(partner, x, y);
-            u8 fromBase = GetPicPixel(base, x, y);
-            s16 d = (s16)y - seam;
+            u8 p;
+            u8 neighbors = 0;
 
-            if (d < -FUSION_SEAM_BLEND)
-            {
-                // Well above the seam: partner's body, but never punch a hole
-                // through the base's silhouette.
-                SetPicPixel(base, x, y, fromPartner != 0 ? fromPartner : fromBase);
-            }
-            else if (d <= FUSION_SEAM_BLEND)
-            {
-                // Interlocking band: alternate ownership per pixel so the two
-                // bodies mesh, and always prefer a solid pixel over empty space.
-                bool8 partnerTurn = (((x + y) & 1) == 0) ? (d <= 0) : (d < 0);
+            if (GetPicPixel(base, x, y) == 0 || IsSilhouetteEdge(base, x, y))
+                continue;
+            p = WARP_PARTNER(x, y);
+            if (p == 0 || p == body)
+                continue; // partner is blank or plain here: nothing to say
+            if (FusionMask(x, y) < FUSION_MARK_THRESHOLD)
+                continue;
 
-                if (partnerTurn)
-                    SetPicPixel(base, x, y, fromPartner != 0 ? fromPartner : fromBase);
-                else if (fromBase == 0 && fromPartner != 0)
-                    SetPicPixel(base, x, y, fromPartner);
-            }
-            // Below the seam the base pic is already in place: nothing to do.
+            if (x > bb.minX && WARP_PARTNER(x - 1, y) != body && WARP_PARTNER(x - 1, y) != 0)
+                neighbors++;
+            if (x < bb.maxX && WARP_PARTNER(x + 1, y) != body && WARP_PARTNER(x + 1, y) != 0)
+                neighbors++;
+            if (y > bb.minY && WARP_PARTNER(x, y - 1) != body && WARP_PARTNER(x, y - 1) != 0)
+                neighbors++;
+            if (y < bb.maxY && WARP_PARTNER(x, y + 1) != body && WARP_PARTNER(x, y + 1) != 0)
+                neighbors++;
+            if (neighbors < FUSION_MARK_NEIGHBORS)
+                continue;
+
+            SetPicPixel(base, x, y, p);
         }
     }
+
+    // --- crest pass: graft the partner's horns/ears/fins onto the head ---
+    // Only rows where the partner is actually narrow qualify, so this
+    // transplants a crest rather than the top of a round body.
+    for (i = 0; i < FUSION_CREST_ROWS && pb.minY + i < MON_PIC_HEIGHT; i++)
+    {
+        u8 width = 0;
+
+        for (x = 0; x < MON_PIC_WIDTH; x++)
+        {
+            if (GetPicPixel(partner, x, pb.minY + i) != 0)
+                width++;
+        }
+        if (width == 0 || width > (pw * 3) / 5)
+            break;
+        crestRows++;
+    }
+
+    // Every column's original top edge must be found before any crest pixel is
+    // written, or a graft in one column would be mistaken for the head in the next.
+    for (x = 0; x < MON_PIC_WIDTH; x++)
+    {
+        baseTop[x] = MON_PIC_HEIGHT; // MON_PIC_HEIGHT = "column is empty"
+        for (y = 0; y < MON_PIC_HEIGHT; y++)
+        {
+            if (GetPicPixel(base, x, y) != 0)
+            {
+                baseTop[x] = y;
+                if (y < crown)
+                    crown = y;
+                break;
+            }
+        }
+    }
+
+    if (crestRows != 0)
+    {
+        for (x = bb.minX; x <= bb.maxX; x++)
+        {
+            u8 px;
+
+            if (baseTop[x] >= MON_PIC_HEIGHT || baseTop[x] > crown + FUSION_CREST_HEAD)
+                continue; // shoulders or empty column, not the head
+            px = pb.minX + ((x - bb.minX) * pw) / bw;
+            for (i = 0; i < crestRows; i++)
+            {
+                u8 v = GetPicPixel(partner, px, pb.minY + i);
+                s16 dy = (s16)baseTop[x] - (crestRows - i);
+
+                if (v != 0 && dy >= 0 && GetPicPixel(base, x, dy) == 0)
+                    SetPicPixel(base, x, dy, v);
+            }
+        }
+    }
+
+    #undef WARP_PARTNER
 }
 
 void Fusion_SpliceMonPic(void *dest, u32 personality, bool8 isFrontPic)

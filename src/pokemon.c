@@ -2397,6 +2397,7 @@ s32 CalculateBaseDamage(struct BattlePokemon *attacker, struct BattlePokemon *de
     u8 defenderHoldEffectParam;
     u8 attackerHoldEffect;
     u8 attackerHoldEffectParam;
+    bool8 usesPhysical, usesSpecial;
 
     if (!powerOverride)
         gBattleMovePower = gBattleMoves[move].power;
@@ -2509,7 +2510,18 @@ s32 CalculateBaseDamage(struct BattlePokemon *attacker, struct BattlePokemon *de
     if (gBattleMoves[gCurrentMove].effect == EFFECT_EXPLOSION)
         defense /= 2;
 
-    if (IS_TYPE_PHYSICAL(type))
+    // Which side of the stat sheet this move hits from. Normally Gen 3 decides
+    // that from the move's type, but the fusion signature move always strikes
+    // with the fusion's better offence instead.
+    usesPhysical = IS_TYPE_PHYSICAL(type);
+    usesSpecial = IS_TYPE_SPECIAL(type);
+    if (move == MOVE_FUSION_BURST && type != TYPE_MYSTERY)
+    {
+        usesPhysical = Fusion_BurstUsesPhysical(attacker);
+        usesSpecial = !usesPhysical;
+    }
+
+    if (usesPhysical)
     {
         if (gCritMultiplier == 2)
         {
@@ -2564,7 +2576,7 @@ s32 CalculateBaseDamage(struct BattlePokemon *attacker, struct BattlePokemon *de
     if (type == TYPE_MYSTERY)
         damage = 0; // is ??? type. does 0 damage.
 
-    if (IS_TYPE_SPECIAL(type))
+    if (usesSpecial)
     {
         if (gCritMultiplier == 2)
         {
