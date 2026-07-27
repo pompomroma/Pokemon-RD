@@ -111,6 +111,18 @@ GAME_STRINGS = {
     "gText_Badges":             "배지",
     "gText_Option":             "설정",
     "gText_FrameType":          "타입",
+    # summary screen and stat labels
+    "gText_ItemEffect_HP":      "체력",
+    "gText_ItemEffect_SpAtk":   "특공",
+    "gText_ItemEffect_SpDef":   "특방",
+    "gText_LevelUp_Speed":      "스피드",
+    "gText_PokeSum_ExpPoints":  "경험치",
+    "gText_PokeSum_NextLv":     "다음레벨",
+    "gText_PokeSum_Item_None":  "없음",
+    "gText_ItemStorage":        "도구보관",
+    "gText_ItemsPocket":        "도구주머니",
+    "gText_Info_2":             "정보",
+    "gText_YesNo":              "예\\n아니오",
 }
 GAMEHDR = os.path.join(ROOT, "include/korean_game_strings.h")
 
@@ -271,7 +283,7 @@ for group, path in ((STRINGS, FONT), (CJK_STRINGS, FONT_CJK)):
 # The game-UI batch appends next, then Oak's dialogue, so previously assigned
 # slots never move and older baked art stays valid.
 for _s in GAME_STRINGS.values():
-    for ch in _s:
+    for ch in dialogue_hangul(_s):
         if ch not in seen:
             seen.add(ch)
             order.append(ch)
@@ -388,9 +400,26 @@ def encode_glyph(gid):
     return [0xF9, 0xFF, (gid >> 8) & 0xFF, gid & 0xFF]
 
 def to_bytes(s):
+    """Encode a UI string: Hangul syllables, punctuation and markup tokens."""
     out = []
-    for ch in s:
-        out += encode_glyph(glyph_of[ch])
+    i = 0
+    while i < len(s):
+        for tok, code in MARKUP:      # \n \l \p {PLAYER} {RIVAL} {STR_VAR_n}
+            if s.startswith(tok, i):
+                out += code
+                i += len(tok)
+                break
+        else:
+            ch = s[i]
+            # Any baked glyph, so this also serves the CJK language-select
+            # labels, whose characters are not Hangul.
+            if ch in glyph_of:
+                out += encode_glyph(glyph_of[ch])
+            elif ch in PUNCT:
+                out.append(PUNCT[ch])
+            else:
+                raise SystemExit("unmapped char %r in UI string %r" % (ch, s))
+            i += 1
     out.append(0xFF)              # EOS
     return out
 
