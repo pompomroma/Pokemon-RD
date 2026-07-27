@@ -1,4 +1,5 @@
 #include "global.h"
+#include "game_language.h"
 #include "window.h"
 #include "text.h"
 
@@ -83,6 +84,13 @@ bool16 AddTextPrinter(struct TextPrinterTemplate *textSubPrinter, u8 speed, void
         sTempTextPrinter.subUnion.fields[i] = 0;
 
     sTempTextPrinter.printerTemplate = *textSubPrinter;
+    // Every piece of text in the game is drawn through here, so localizing the
+    // string at this one point translates menus, battle text, names and item
+    // descriptions alike, instead of needing a call-site edit for each. Only
+    // the local copy is touched, so the caller's template is left alone.
+    // Strings built at runtime (gStringVar4 and friends) are RAM buffers that
+    // never match an entry and simply pass through.
+    sTempTextPrinter.printerTemplate.currentChar = GameText_Localize(sTempTextPrinter.printerTemplate.currentChar);
     sTempTextPrinter.callback = callback;
     sTempTextPrinter.minLetterSpacing = 0;
     sTempTextPrinter.japanese = 0;

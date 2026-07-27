@@ -2,6 +2,8 @@
 #include "game_language.h"
 #include "event_scripts.h"
 #include "korean_dialogue.h"
+#include "korean_game_strings.h"
+#include "strings.h"
 
 // The language chosen on the boot screen, held outside SaveBlock2 because the
 // title screen relocates and then reloads that block from flash after the boot
@@ -98,6 +100,14 @@ static const struct TranslatedText sTranslatedText[] =
     { PalletTown_PlayersHouse_1F_Text_AllGirlsLeaveOakLookingForYou,   sKorMom_AllGirlsLeave },
 };
 
+// The high-frequency game UI batch. Every English symbol here is declared in
+// include/strings.h, so pairing it with its generated Korean counterpart needs
+// no extern of its own. Kept separate from sTranslatedText above because this
+// table is generated wholesale rather than curated line by line.
+#define X(sym) { sym, sKorUI_##sym },
+static const struct TranslatedText sGameStrings[] = { KOREAN_GAME_STRING_LIST };
+#undef X
+
 // Returns the translation of `str` for the selected language, or `str` itself
 // when the language is English or the line has no translation. Matching is by
 // pointer, so it is a short scan that never inspects string contents -- buffers
@@ -113,6 +123,11 @@ const u8 *GameText_Localize(const u8 *str)
     {
         if (sTranslatedText[i].en == str)
             return sTranslatedText[i].ko;
+    }
+    for (i = 0; i < ARRAY_COUNT(sGameStrings); i++)
+    {
+        if (sGameStrings[i].en == str)
+            return sGameStrings[i].ko;
     }
     return str;
 }

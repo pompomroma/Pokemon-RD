@@ -174,6 +174,17 @@
 #define CHAR_DYNAMIC           0xF7
 #define CHAR_KEYPAD_ICON       0xF8
 #define CHAR_EXTRA_SYMBOL      0xF9
+
+// CHAR_EXTRA_SYMBOL is normally followed by one byte, giving glyph 0x100|n --
+// 256 slots, of which the fonts only leave ~232 free. That is not enough for
+// broad Korean, which needs well over a thousand distinct syllables.
+//
+// This byte, used in that following position, marks the WIDE form: the two
+// bytes after it are a full 16-bit glyph id, so the banks above 0x1FF become
+// addressable. It costs no top-level control code (every byte 0xF0-0xFF is
+// already claimed in charmap.txt) because Korean glyph indices never reach
+// 0xFF in the narrow form.
+#define EXTRA_SYMBOL_WIDE      0xFF
 #define CHAR_PROMPT_SCROLL     0xFA // waits for button press and scrolls dialog
 #define CHAR_PROMPT_CLEAR      0xFB // waits for button press and clears dialog
 #define EXT_CTRL_CODE_BEGIN    0xFC // extended control code

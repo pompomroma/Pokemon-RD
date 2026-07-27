@@ -2,7 +2,8 @@
 # Bakes real Hangul glyphs for a curated set of Korean UI strings into the
 # normal font's free glyph slots (0x118+), sets their widths, and emits a C
 # header of the strings as byte arrays that use the engine's extra-symbol
-# escape (0xF9 <n> -> glyph 0x100|n).
+# escape (0xF9 <n> -> glyph 0x100|n, or the wide 0xF9 0xFF <hi> <lo> form for
+# the banks above 0x1FF).
 import re, os
 from PIL import Image, ImageFont, ImageDraw
 
@@ -48,6 +49,71 @@ CJK_STRINGS = {
 }
 
 DLGHDR = os.path.join(ROOT, "include/korean_dialogue.h")
+
+# --- Batch: high-frequency game UI strings -----------------------------------
+# Keyed by the English symbol declared in include/strings.h. game_language.c
+# includes that header, so the pair {symbol, sKorUI_symbol} needs no externs.
+#
+# Hangul advances a fixed 16px per syllable against roughly 6px for a Latin
+# letter, so these are kept SHORT on purpose: several live in fixed-width
+# windows (bag pockets, the party action list) where a literal translation
+# would overrun the frame.
+GAME_STRINGS = {
+    # start menu
+    "gText_MenuPokedex":        "도감",
+    "gText_MenuPokemon":        "포켓몬",
+    "gText_MenuBag":            "가방",
+    "gText_MenuSave":           "저장",
+    "gText_MenuOption":         "설정",
+    "gText_MenuExit":           "나가기",
+    "gText_MenuBattleHub":      "허브",
+    "gText_MenuTradeHub":       "교환",
+    "gText_MenuDimensionHole":  "차원홀",
+    # confirmations
+    "gText_Yes":                "예",
+    "gText_No":                 "아니오",
+    "gText_PartyMenu_OK":       "확인",
+    "gText_OptionMenuCancel":   "취소",
+    # bag pockets
+    "gText_Items":              "도구",
+    "gText_Items2":             "도구",
+    "gText_KeyItems":           "중요도구",
+    "gText_KeyItems2":          "중요도구",
+    "gText_PokeBalls":          "몬스터볼",
+    "gText_PokeBalls2":         "몬스터볼",
+    "gText_TMCase":             "기술기계",
+    "gText_TmCase":             "기술기계",
+    "gText_BerryPouch":         "열매",
+    "gText_BerryPouch_2":       "열매",
+    # party / PC actions
+    "gText_Switch2":            "교체",
+    "gText_Summary5":           "능력치",
+    "gText_Read2":              "읽기",
+    "gText_Item":               "도구",
+    "gText_Mail":               "편지",
+    "gText_Take":               "받기",
+    "gText_Store":              "맡기기",
+    "gText_Shift":              "교대",
+    "gText_Withdraw":           "꺼내기",
+    "gText_Info":               "정보",
+    "gText_Quit":               "그만",
+    "gText_Toss":               "버리기",
+    "gText_Register":           "등록",
+    "gText_Box":                "박스",
+    # stats and trainer card
+    "gText_ItemEffect_Attack":  "공격",
+    "gText_ItemEffect_Defense": "방어",
+    "gText_ItemEffect_Speed":   "스피드",
+    "gText_LevelUp_Attack":     "공격",
+    "gText_LevelUp_Defense":    "방어",
+    "gText_TrainerCardMoney":   "소지금",
+    "gText_Time":               "시간",
+    "gText_Badges":             "배지",
+    "gText_Option":             "설정",
+    "gText_FrameType":          "타입",
+}
+GAMEHDR = os.path.join(ROOT, "include/korean_game_strings.h")
+
 
 # Korean translations of PROF. OAK's opening speech (the game's most-read
 # dialogue). Markup mirrors the .string syntax of the English source:
@@ -159,6 +225,10 @@ def dialogue_hangul(s):
     return [c for c in t if is_hangul(c)]
 
 FIRST_GLYPH = 0x118   # first free glyph slot
+# The Latin sheets are 256x2048 (2048 glyphs). Everything from 0x200 up is new
+# space reached through the wide escape, which is what lifts the old ~232-slot
+# ceiling that kept the translation "curated".
+LAST_GLYPH = 0x7FF
 GLYPH_W = 16          # advance width stored for Hangul cells
 
 # name -> Korean text. These map to the English UI strings we localize.
@@ -198,14 +268,24 @@ for group, path in ((STRINGS, FONT), (CJK_STRINGS, FONT_CJK)):
                 seen.add(ch)
                 order.append(ch)
                 font_path_of[ch] = path
-# Oak's dialogue appends after the UI/CJK glyphs so existing slots never move.
+# The game-UI batch appends next, then Oak's dialogue, so previously assigned
+# slots never move and older baked art stays valid.
+for _s in GAME_STRINGS.values():
+    for ch in _s:
+        if ch not in seen:
+            seen.add(ch)
+            order.append(ch)
+            font_path_of[ch] = FONT
 for s in DIALOGUE.values():
     for ch in dialogue_hangul(s):
         if ch not in seen:
             seen.add(ch)
             order.append(ch)
             font_path_of[ch] = FONT
-assert len(order) <= (0x200 - FIRST_GLYPH), "too many syllables for free slots"
+# Slots run from FIRST_GLYPH up to the end of the enlarged sheets. Anything at
+# or above 0x200 is emitted in the wide form (see encode_glyph).
+assert len(order) <= (LAST_GLYPH + 1 - FIRST_GLYPH), (
+    "too many syllables: %d, capacity %d" % (len(order), LAST_GLYPH + 1 - FIRST_GLYPH))
 glyph_of = {ch: FIRST_GLYPH + i for i, ch in enumerate(order)}
 print("unique glyphs:", len(order), "-> glyphs 0x%X..0x%X" % (FIRST_GLYPH, FIRST_GLYPH+len(order)-1))
 
@@ -260,12 +340,12 @@ def render_cell(px, ch, gid):
 for rel, _tables in FONT_TARGETS:
     path = os.path.join(ROOT, rel)
     sheet = Image.open(path)
-    assert sheet.mode == "P" and sheet.size == (256, 512), (rel, sheet.mode, sheet.size)
+    assert sheet.mode == "P" and sheet.size == (256, 2048), (rel, sheet.mode, sheet.size)
     spx = sheet.load()
     # Wipe every slot we own first. An earlier run may have used more glyphs
     # than this one, and leftover ink in a now-unreferenced slot would sit in
     # the sheet forever.
-    for gid in range(FIRST_GLYPH, 0x200):
+    for gid in range(FIRST_GLYPH, LAST_GLYPH + 1):
         ox, oy = (gid % 16) * 16, (gid // 16) * CELL_H
         for y in range(CELL_H):
             for x in range(16):
@@ -282,13 +362,13 @@ for _rel, tables in FONT_TARGETS:
         m = re.search(r'(static const u8 ' + table + r'\[\]\s*=\s*\{)(.*?)(\};)', txt, re.S)
         assert m, "width table not found: " + table
         nums = re.findall(r'-?\d+', m.group(2))
-        assert len(nums) == 512, (table, len(nums))
+        assert len(nums) == LAST_GLYPH + 1, (table, len(nums))
         nums = [int(n) for n in nums]
         for gid in glyph_of.values():
             nums[gid] = GLYPH_W
         # re-emit 16 per line
         lines = []
-        for i in range(0, 512, 16):
+        for i in range(0, LAST_GLYPH + 1, 16):
             lines.append("    " + ", ".join(str(n) for n in nums[i:i + 16]) + ",")
         newbody = "\n" + "\n".join(lines) + "\n"
         txt = txt[:m.start()] + m.group(1) + newbody + m.group(3) + txt[m.end():]
@@ -296,12 +376,21 @@ for _rel, tables in FONT_TARGETS:
 open(TEXTC, "w").write(txt)
 
 # --- emit the C header ------------------------------------------------------
+def encode_glyph(gid):
+    """Bytes for one baked glyph.
+
+    Narrow form (0xF9 n) only reaches glyph 0x100|n, so it stops at 0x1FF and
+    cannot use n == 0xFF, which is the wide marker. Everything else goes out as
+    the wide form (0xF9 0xFF hi lo), which carries a full 16-bit glyph id.
+    """
+    if gid < 0x200 and (gid & 0xFF) != 0xFF:
+        return [0xF9, gid & 0xFF]
+    return [0xF9, 0xFF, (gid >> 8) & 0xFF, gid & 0xFF]
+
 def to_bytes(s):
     out = []
     for ch in s:
-        gid = glyph_of[ch]
-        out.append(0xF9)          # CHAR_EXTRA_SYMBOL
-        out.append(gid & 0xFF)    # low byte -> glyph 0x100|n
+        out += encode_glyph(glyph_of[ch])
     out.append(0xFF)              # EOS
     return out
 
@@ -342,7 +431,7 @@ def encode_dialogue(s):
         else:
             ch = s[i]
             if is_hangul(ch):
-                out += [0xF9, glyph_of[ch] & 0xFF]
+                out += encode_glyph(glyph_of[ch])
             elif ch in PUNCT:
                 out.append(PUNCT[ch])
             else:
@@ -363,4 +452,20 @@ with open(DLGHDR, "w") as f:
         f.write("static const u8 %s[] = { %s };\n\n" % (name, arr))
     f.write("#endif // GUARD_KOREAN_DIALOGUE_H\n")
 print("wrote", DLGHDR)
-print("TOTAL glyphs used: %d of %d free slots" % (len(order), 0x200 - FIRST_GLYPH))
+print("TOTAL glyphs used: %d of %d slots (0x%X..0x%X)" % (len(order), LAST_GLYPH + 1 - FIRST_GLYPH, FIRST_GLYPH, LAST_GLYPH))
+
+# --- emit the game-UI batch header ------------------------------------------
+with open(GAMEHDR, "w") as f:
+    f.write("#ifndef GUARD_KOREAN_GAME_STRINGS_H\n#define GUARD_KOREAN_GAME_STRINGS_H\n\n")
+    f.write("// Auto-generated by tools/korean_glyphs/gen_korean.py -- do not edit.\n")
+    f.write("// Korean for the game's high-frequency UI strings, encoded as extra-symbol\n")
+    f.write("// escapes into the baked Hangul glyph slots. KOREAN_GAME_STRING_LIST pairs\n")
+    f.write("// each one with the English symbol of the same name from include/strings.h.\n\n")
+    for name, txt in GAME_STRINGS.items():
+        data = ", ".join("0x%02X" % b for b in to_bytes(txt))
+        f.write("static const u8 sKorUI_%s[] = {%s}; // %s\n" % (name, data, txt))
+    f.write("\n#define KOREAN_GAME_STRING_LIST \\\n")
+    for name in GAME_STRINGS:
+        f.write("    X(%s) \\\n" % name)
+    f.write("\n\n#endif // GUARD_KOREAN_GAME_STRINGS_H\n")
+print("wrote", GAMEHDR, "(%d strings)" % len(GAME_STRINGS))
