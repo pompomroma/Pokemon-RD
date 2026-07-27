@@ -20,6 +20,7 @@
 #include "battle_message.h"
 #include "battle_script_commands.h"
 #include "reshow_battle_screen.h"
+#include "throw_motion.h"
 #include "constants/battle_anim.h"
 #include "constants/items.h"
 #include "constants/moves.h"
@@ -2921,7 +2922,9 @@ static void PlayerHandleIntroTrainerBallThrow(void)
     gSprites[gBattlerSpriteIds[gActiveBattler]].data[0] = 50;
     gSprites[gBattlerSpriteIds[gActiveBattler]].data[2] = -40;
     gSprites[gBattlerSpriteIds[gActiveBattler]].data[4] = gSprites[gBattlerSpriteIds[gActiveBattler]].y;
-    gSprites[gBattlerSpriteIds[gActiveBattler]].callback = PlayerThrowBall_StartAnimLinearTranslation;
+    // Wind up, snap and follow through before the slide-off takes over.
+    ThrowMotion_Start(&gSprites[gBattlerSpriteIds[gActiveBattler]], 1,
+                      PlayerThrowBall_StartAnimLinearTranslation);
     gSprites[gBattlerSpriteIds[gActiveBattler]].data[5] = gActiveBattler;
     StoreSpriteCallbackInData6(&gSprites[gBattlerSpriteIds[gActiveBattler]], SpriteCB_FreePlayerSpriteLoadMonSprite);
     StartSpriteAnim(&gSprites[gBattlerSpriteIds[gActiveBattler]], 1);
@@ -2949,7 +2952,9 @@ void SpriteCB_FreePlayerSpriteLoadMonSprite(struct Sprite *sprite)
 
 static void Task_StartSendOutAnim(u8 taskId)
 {
-    if (gTasks[taskId].data[1] < 31)
+    // Held until the throwing motion reaches its snap, so the ball leaves on
+    // the forward drive instead of after the trainer has already moved on.
+    if (gTasks[taskId].data[1] < 19)
     {
         ++gTasks[taskId].data[1];
     }

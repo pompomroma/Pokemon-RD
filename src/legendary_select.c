@@ -13,6 +13,7 @@
 #include "legendary_select.h"
 #include "string_util.h"
 #include "deoxys_forms.h"
+#include "champion_mode.h"
 #include "constants/songs.h"
 #include "constants/items.h"
 #include "constants/species.h"
@@ -51,8 +52,19 @@ static const struct LegendaryEntry sLegendaries[] =
     { SPECIES_DEOXYS, DEOXYS_FORM_ATTACK },
     { SPECIES_DEOXYS, DEOXYS_FORM_DEFENSE },
     { SPECIES_DEOXYS, DEOXYS_FORM_SPEED },
+    // BBAKSAYON is last so it can simply be cut off the end of the list when
+    // it is still locked. It is only ever reachable by clearing the game and
+    // then switching to the hardest mode (see include/champion_mode.h).
+    { SPECIES_BBAKSAYON, DEOXYS_FORM_NONE },
 };
-#define LEGENDARY_COUNT ARRAY_COUNT(sLegendaries)
+
+// Rows the player can actually see right now.
+static u16 LegendaryCount(void)
+{
+    return Bbaksayon_IsUnlocked() ? ARRAY_COUNT(sLegendaries)
+                                  : ARRAY_COUNT(sLegendaries) - 1;
+}
+#define LEGENDARY_COUNT LegendaryCount()
 
 // gSpeciesNames has a single "DEOXYS" entry, so the formes need their own.
 static const u8 *EntryName(u16 idx)

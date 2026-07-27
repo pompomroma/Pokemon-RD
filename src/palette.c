@@ -933,24 +933,35 @@ void GradePalette_Cinematic(u16 *palette, u16 count)
             g += (29 - g) * bloom >> 6;
             b += (23 - b) * bloom >> 6;
         }
-        // LUSTER. The bloom above is the ambient sunlit wash and lifts a wide
-        // band of tones together, which on its own reads as "brighter paint"
-        // rather than a polished surface. Lustre comes from SEPARATION, so the
-        // upper midtones are held back a touch while the true highlights are
-        // driven hard toward warm white. The result is a distinct glint sitting
-        // on top of the wash -- surfaces read as glossy instead of merely bright.
-        if (luma >= 20 && luma <= 25)
+        // LUSTER, pushed to the maximum the 5-bit channels will carry. Lustre
+        // comes from SEPARATION, not brightness: the shoulder under the glint is
+        // driven down hard while the true highlights are slammed to white, so
+        // the gap between them is as wide as the format allows. Anything more
+        // and the highlights clip flat and the glint stops reading as a glint.
+        if (luma >= 19 && luma <= 24)
         {
-            r = r * 61 >> 6; // ~x0.95, deepens the shoulder under the glint
-            g = g * 61 >> 6;
-            b = b * 61 >> 6;
+            r = r * 52 >> 6; // ~x0.81, a deep shoulder for the glint to sit on
+            g = g * 52 >> 6;
+            b = b * 51 >> 6;
         }
-        else if (luma > 25)
+        else if (luma > 24)
         {
-            s32 spec = luma - 25; // 1..6
-            r += (31 - r) * spec >> 5;
-            g += (31 - g) * spec >> 5;
-            b += (27 - b) * spec >> 6; // blue lags, so the glint stays golden
+            // Squared ramp: the brightest pixels race to white far faster than
+            // the merely bright ones, which is what makes a surface read as wet
+            // or polished rather than evenly lit.
+            s32 spec = luma - 24;          // 1..7
+            s32 hot = spec * spec;         // 1..49
+            r += (31 - r) * hot >> 5;
+            g += (31 - g) * hot >> 5;
+            b += (29 - b) * hot >> 6;      // blue lags, so the glint stays golden
+            // A hard specular cap on the very hottest pixels: a true blown
+            // highlight core, the part that actually sparkles.
+            if (luma >= 29)
+            {
+                r = 31;
+                g = 31;
+                b = ClampChannel(b + 6);
+            }
         }
         palette[i] = RGB2(ClampChannel(r), ClampChannel(g), ClampChannel(b));
     }

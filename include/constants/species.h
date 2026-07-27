@@ -422,6 +422,13 @@
 
 #define NUM_SPECIES SPECIES_EGG
 
+// BBAKSAYON -- an original legendary made for this hack, not a species from the
+// Pokemon series. It is hosted in the first OLD_UNOWN placeholder slot so every
+// species-indexed table keeps its exact size; that slot was already dead data
+// (a "?" with question-mark art) and is already excluded from the randomizer
+// pool, which is what keeps this legendary out of random generation.
+#define SPECIES_BBAKSAYON SPECIES_OLD_UNOWN_B
+
 #define SPECIES_UNOWN_B (NUM_SPECIES + 1)
 #define SPECIES_UNOWN_C (NUM_SPECIES + 2)
 #define SPECIES_UNOWN_D (NUM_SPECIES + 3)

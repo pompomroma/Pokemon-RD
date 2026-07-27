@@ -33,6 +33,7 @@
 #include "constants/battle_script_commands.h"
 #include "constants/items.h"
 #include "constants/hold_effects.h"
+#include "move_style.h"
 #include "constants/songs.h"
 #include "constants/moves.h"
 #include "constants/abilities.h"
@@ -1220,6 +1221,19 @@ static void Cmd_damagecalc(void)
         gBattleMoveDamage *= 2;
     if (gProtectStructs[gBattlerAttacker].helpingHand)
         gBattleMoveDamage = gBattleMoveDamage * 15 / 10;
+
+    // Tally this as a physical or special attack for the attacking party mon,
+    // which is what steers its Attack vs Sp. Atk growth on level up. Only the
+    // player's own party is tracked -- nothing else keeps its record.
+    if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER
+     && !(gBattleTypeFlags & BATTLE_TYPE_LINK_IN_BATTLE))
+    {
+        u8 moveType = gBattleStruct->dynamicMoveType ? (gBattleStruct->dynamicMoveType & 0x3F)
+                                                     : gBattleMoves[gCurrentMove].type;
+        MoveStyle_RecordUse(GetMonData(&gPlayerParty[gBattlerPartyIndexes[gBattlerAttacker]],
+                                       MON_DATA_PERSONALITY, NULL),
+                            IS_TYPE_PHYSICAL(moveType));
+    }
 
     gBattlescriptCurrInstr++;
 }

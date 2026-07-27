@@ -11,13 +11,15 @@
 #include "field_fadetransition.h"
 #include "game_language.h"
 #include "coop_group.h"
+#include "champion_mode.h"
 #include "string_util.h"
 #include "sound.h"
+#include "constants/difficulty.h"
 #include "constants/songs.h"
 #include "gba/m4a_internal.h"
 
-// Vertical distance between option rows. Tightened so the added LANGUAGE and
-// CO-OP CODE rows keep all 9 rows inside the options window.
+// Vertical distance between option rows. Tightened so the added LANGUAGE,
+// CO-OP CODE and MODE rows keep all 10 rows inside the options window.
 #define OPTION_ROW_PITCH 10
 
 // can't include the one in menu_helpers.h since Task_OptionMenu needs bool32 for matching
@@ -34,6 +36,7 @@ enum
     MENUITEM_FRAMETYPE,
     MENUITEM_LANGUAGE,
     MENUITEM_COOP,
+    MENUITEM_MODE,
     MENUITEM_CANCEL,
     MENUITEM_COUNT
 };
@@ -96,8 +99,11 @@ static const struct WindowTemplate sOptionMenuWinTemplates[] =
         .bg = 0,
         .tilemapLeft = 2,
         .tilemapTop = 7,
+        // 13 rows of tiles (104px) so the 10th option (MODE) fits; the footer's
+        // baseBlock moves down to stay clear of this window's larger tile span
+        // (0x36 + 26*13 = 0x188).
         .width = 26,
-        .height = 12,
+        .height = 13,
         .paletteNum = 1,
         .baseBlock = 0x36
     },
@@ -108,7 +114,7 @@ static const struct WindowTemplate sOptionMenuWinTemplates[] =
         .width = 30,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = 0x16e
+        .baseBlock = 0x188
     },
     DUMMY_WIN_TEMPLATE
 };
@@ -145,7 +151,7 @@ static const struct BgTemplate sOptionMenuBgTemplates[] =
 };
 
 static const u16 sOptionMenuPalette[] = INCBIN_U16("graphics/misc/option_menu.gbapal");
-static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 4, 1, 0};
+static const u16 sOptionMenuItemCounts[MENUITEM_COUNT] = {3, 2, 2, 2, 3, 10, 4, 1, DIFFICULTY_COUNT, 0};
 
 // Co-op code row strings.
 static const u8 sText_CoopCode_En[] = _("CO-OP CODE");
@@ -162,6 +168,12 @@ static const u16 sCoopPow10[4] = {1000, 100, 10, 1};
 
 static const u8 sText_Language_En[] = _("LANGUAGE");
 
+// Difficulty tier. Locked to the tier picked at the start of the save until the
+// game is cleared; after that the player may switch, and picking the hardest
+// tier is what reveals BBAKSAYON (see include/champion_mode.h).
+static const u8 sText_Mode_En[] = _("MODE");
+static const u8 sText_ModeLocked[] = _(" (CLEAR GAME)");
+
 static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
 {
     [MENUITEM_TEXTSPEED]   = gText_TextSpeed,
@@ -172,6 +184,7 @@ static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
     [MENUITEM_FRAMETYPE]   = gText_Frame,
     [MENUITEM_LANGUAGE]    = sText_Language_En,
     [MENUITEM_COOP]        = sText_CoopCode_En,
+    [MENUITEM_MODE]        = sText_Mode_En,
     [MENUITEM_CANCEL]      = gText_OptionMenuCancel,
 };
 
@@ -186,6 +199,7 @@ static const u8 *const sOptionMenuItemsNamesKor[MENUITEM_COUNT] =
     [MENUITEM_FRAMETYPE]   = sKorText_Frame,
     [MENUITEM_LANGUAGE]    = sKorText_Language,
     [MENUITEM_COOP]        = sText_CoopCode_En, // no baked Hangul; falls back to English
+    [MENUITEM_MODE]        = sText_Mode_En,     // ditto
     [MENUITEM_CANCEL]      = sKorText_Cancel,
 };
 
@@ -273,6 +287,7 @@ void CB2_OptionsMenuFromStartMenu(void)
     sOptionMenuPtr->option[MENUITEM_BUTTONMODE] = gSaveBlock2Ptr->optionsButtonMode;
     sOptionMenuPtr->option[MENUITEM_FRAMETYPE] = gSaveBlock2Ptr->optionsWindowFrameType;
     sOptionMenuPtr->option[MENUITEM_LANGUAGE] = gSaveBlock2Ptr->optionsLanguage;
+    sOptionMenuPtr->option[MENUITEM_MODE] = gSaveBlock2Ptr->difficulty;
 
     for (i = 0; i < MENUITEM_COUNT - 1; i++)
     {
@@ -518,6 +533,11 @@ static u8 OptionMenu_ProcessInput(void)
         return 0;
     }
 
+    // The difficulty tier is locked in until the game is cleared.
+    if ((JOY_REPT(DPAD_RIGHT) || JOY_REPT(DPAD_LEFT))
+     && sOptionMenuPtr->cursorPos == MENUITEM_MODE && !ChampionMode_CanSwitch())
+        return 0;
+
     if (JOY_REPT(DPAD_RIGHT))
     {
         current = sOptionMenuPtr->option[(sOptionMenuPtr->cursorPos)];
@@ -616,6 +636,13 @@ static void BufferOptionMenuString(u8 selection)
     case MENUITEM_LANGUAGE:
         AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, sLanguageOptions[sOptionMenuPtr->option[selection]]);
         break;
+    case MENUITEM_MODE:
+        // Before the game is cleared the tier is fixed, so say why.
+        StringCopy(str, ChampionMode_GetDifficultyName(sOptionMenuPtr->option[selection]));
+        if (!ChampionMode_CanSwitch())
+            StringAppend(str, sText_ModeLocked);
+        AddTextPrinterParameterized3(1, FONT_NORMAL, x, y, dst, -1, str);
+        break;
     case MENUITEM_COOP:
         if (sOptionMenuPtr->editing)
         {
@@ -661,6 +688,9 @@ static void CloseAndSaveOptionMenu(u8 taskId)
     gSaveBlock2Ptr->optionsButtonMode = sOptionMenuPtr->option[MENUITEM_BUTTONMODE];
     gSaveBlock2Ptr->optionsWindowFrameType = sOptionMenuPtr->option[MENUITEM_FRAMETYPE];
     gSaveBlock2Ptr->optionsLanguage = sOptionMenuPtr->option[MENUITEM_LANGUAGE];
+    // Only writable post-game; before that the row is display-only.
+    if (ChampionMode_CanSwitch())
+        ChampionMode_SetDifficulty(sOptionMenuPtr->option[MENUITEM_MODE]);
     SetPokemonCryStereo(gSaveBlock2Ptr->optionsSound);
     FREE_AND_SET_NULL(sOptionMenuPtr);
     DestroyTask(taskId);

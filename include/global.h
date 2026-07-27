@@ -357,6 +357,19 @@ struct DeoxysFormRecord
     u8 flags;          // DEOXYS_FORM_FLAG_ACTIVE
 };
 
+// How a party mon fights: how many physical vs special attacking moves it has
+// actually landed. Level-up stat growth leans toward whichever it uses more
+// (see src/move_style.c). Only party mons gain levels, so a 6-slot table keyed
+// by personality is enough -- boxed mons never need one.
+#define MOVE_STYLE_RECORDS_COUNT PARTY_SIZE
+
+struct MoveStyleRecord
+{
+    u32 personality;
+    u16 physUses;
+    u16 specUses;
+};
+
 struct SaveBlock2
 {
     /*0x000*/ u8 playerName[PLAYER_NAME_LENGTH + 1];
@@ -398,7 +411,8 @@ struct SaveBlock2
     /*0xE2C*/ u8 coopMemberCount;    // number of active companion avatars (0..3)
     /*0xE2D*/ u8 coopMemberGfx[3];   // OBJ_EVENT_GFX_* of each companion
     /*0xE30*/ struct DeoxysFormRecord deoxysForms[DEOXYS_FORM_RECORDS_COUNT]; // 8 * 12 = 0x60
-    /*0xE90*/ u8 filler_B20[0x90];
+    /*0xE90*/ struct MoveStyleRecord moveStyle[MOVE_STYLE_RECORDS_COUNT];     // 6 * 8 = 0x30
+    /*0xEC0*/ u8 filler_B20[0x60];
     /*0xF20*/ u32 encryptionKey;
 }; // size: 0xF24
 

@@ -2725,6 +2725,14 @@ const u8 gMonIcon_Deoxys[] = INCBIN_U8("graphics/pokemon/deoxys/icon.4bpp", "gra
 const u8 gMonFootprint_Deoxys[] = INCBIN_U8("graphics/pokemon/deoxys/footprint.1bpp");
 #endif
 
+// BBAKSAYON -- original legendary for this hack (see SPECIES_BBAKSAYON).
+const u32 gMonFrontPic_Bbaksayon[] = INCBIN_U32("graphics/pokemon/bbaksayon/front.4bpp.lz");
+const u32 gMonPalette_Bbaksayon[] = INCBIN_U32("graphics/pokemon/bbaksayon/normal.gbapal.lz");
+const u32 gMonBackPic_Bbaksayon[] = INCBIN_U32("graphics/pokemon/bbaksayon/back.4bpp.lz");
+const u32 gMonShinyPalette_Bbaksayon[] = INCBIN_U32("graphics/pokemon/bbaksayon/shiny.gbapal.lz");
+const u8 gMonIcon_Bbaksayon[] = INCBIN_U8("graphics/pokemon/bbaksayon/icon.4bpp");
+const u8 gMonFootprint_Bbaksayon[] = INCBIN_U8("graphics/pokemon/bbaksayon/footprint.1bpp");
+
 const u32 gMonFrontPic_Chimecho[] = INCBIN_U32("graphics/pokemon/chimecho/front.4bpp.lz");
 const u32 gMonPalette_Chimecho[] = INCBIN_U32("graphics/pokemon/chimecho/normal.gbapal.lz");
 const u32 gMonBackPic_Chimecho[] = INCBIN_U32("graphics/pokemon/chimecho/back.4bpp.lz");

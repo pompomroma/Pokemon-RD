@@ -5,6 +5,7 @@
 #include "battle_anim.h"
 #include "battle_ai_script_commands.h"
 #include "battle_controllers.h"
+#include "lens_flare.h"
 #include "battle_interface.h"
 #include "battle_main.h"
 #include "battle_message.h"
@@ -2565,6 +2566,9 @@ static void BattleIntroPrepareBackgroundSlide(void)
         gBattleMainFunc = BattleIntroDrawTrainersOrMonsSprites;
         gBattleCommunication[MULTIUSE_STATE] = 0;
         gBattleCommunication[SPRITES_INIT_STATE1] = 0;
+        // Sprite data has been reset by now and the scene is about to be drawn,
+        // so this is the first point the flare can be spawned and survive.
+        LensFlare_Create();
     }
 }
 

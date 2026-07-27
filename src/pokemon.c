@@ -25,6 +25,7 @@
 #include "pokemon_fusion.h"
 #include "stat_custom.h"
 #include "deoxys_forms.h"
+#include "move_style.h"
 #include "battle_gimmicks.h"
 #include "field_specials.h"
 #include "berry.h"
@@ -2087,6 +2088,7 @@ static u16 CalculateBoxMonChecksum(struct BoxPokemon *boxMon)
     nature = GetNature(mon);                                    \
     n = ModifyStatByNature(nature, n, statIndex);               \
     n = StatCustom_ApplyTalent(mon, n, statIndex);              \
+    n = MoveStyle_ApplyToStat(mon, n, statIndex);               \
     SetMonData(mon, field, &n);                                 \
 }
 

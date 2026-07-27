@@ -3505,8 +3505,20 @@ static const u16 sCelebiLevelUpLearnset[] = {
     LEVEL_UP_END
 };
 
+// BBAKSAYON (hosted in slot 252) -- a legendary movepool to match its stats.
 static const u16 sSpecies252LevelUpLearnset[] = {
-    LEVEL_UP_MOVE(1, MOVE_TACKLE),
+    LEVEL_UP_MOVE( 1, MOVE_CONFUSION),
+    LEVEL_UP_MOVE( 1, MOVE_LEER),
+    LEVEL_UP_MOVE(11, MOVE_BITE),
+    LEVEL_UP_MOVE(22, MOVE_PSYBEAM),
+    LEVEL_UP_MOVE(33, MOVE_FAINT_ATTACK),
+    LEVEL_UP_MOVE(44, MOVE_CONFUSE_RAY),
+    LEVEL_UP_MOVE(55, MOVE_PSYCHIC),
+    LEVEL_UP_MOVE(66, MOVE_CRUNCH),
+    LEVEL_UP_MOVE(77, MOVE_CALM_MIND),
+    LEVEL_UP_MOVE(88, MOVE_SHADOW_BALL),
+    LEVEL_UP_MOVE(95, MOVE_RECOVER),
+    LEVEL_UP_MOVE(99, MOVE_HYPER_BEAM),
     LEVEL_UP_END
 };
 
