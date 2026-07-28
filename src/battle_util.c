@@ -3167,6 +3167,21 @@ u8 IsMonDisobedient(void)
     s32 calc;
     u8 obedienceLevel = 0;
 
+    // Every Pokemon obeys, always.
+    //
+    // Vanilla makes a Pokemon whose original trainer is someone else ignore
+    // orders once its level passes a cap set by how many badges you hold
+    // (10 with none, then 30/50/70, lifted entirely by the eighth badge). A
+    // separate path makes an illegally obtained Mew or Deoxys disobey at any
+    // level regardless of badges. Both are switched off here: a disobeying
+    // Pokemon wastes the turn, falls asleep or attacks at random, which is
+    // punishing in a hack built around trading and fusing mons that were
+    // caught by someone else.
+    //
+    // The original rule is left in place below rather than deleted, so it can
+    // be restored by removing this one return.
+    return 0;
+
     if ((gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_POKEDUDE)))
         return 0;
     if (GetBattlerSide(gBattlerAttacker) == B_SIDE_OPPONENT)
